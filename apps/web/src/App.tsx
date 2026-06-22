@@ -21,6 +21,8 @@ import ContactPage from '@/app/routes/contact';
 import AdminDashboardPage from '@/app/routes/admin/index';
 import AdminUsersPage from '@/app/routes/admin/users';
 import AdminEventsPage from '@/app/routes/admin/events';
+import AdminRegistrationsPage from '@/app/routes/admin/registrations';
+import AdminGalleryPage from '@/app/routes/admin/gallery';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +66,8 @@ export default function App() {
             <Route index element={<AdminDashboardPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="events" element={<AdminEventsPage />} />
+            <Route path="registrations" element={<AdminRegistrationsPage />} />
+            <Route path="gallery" element={<AdminGalleryPage />} />
             <Route path="*" element={<div className="p-8 text-center text-muted-foreground">This admin module is coming soon.</div>} />
           </Route>
         </Routes>

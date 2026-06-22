@@ -1,24 +1,120 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createEventSchema } from '@itsa/shared';
 import apiClient from '@/lib/api-client';
-import { Search, Loader2, Edit, Trash2, Plus } from 'lucide-react';
+import { Search, Loader2, Edit, Trash2, Plus, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const fetchAdminEvents = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/events?page=${page}&limit=10&search=${search}`);
-  return data.data; // Using public endpoint for now, ideally an admin specific one
+  return data.data;
 };
 
 export default function AdminEventsPage() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [modalState, setModalState] = useState<{ type: 'CREATE' | 'EDIT' | 'DELETE' | null, event: any | null }>({ type: null, event: null });
   
   const { data, isLoading } = useQuery({
     queryKey: ['admin-events', page, search],
     queryFn: () => fetchAdminEvents(page, search),
   });
+
+  const closeModal = () => {
+    setModalState({ type: null, event: null });
+    reset({
+      title: '', description: '', shortDescription: '', venue: '', eventType: 'INDIVIDUAL',
+      startDate: new Date().toISOString().slice(0, 16), endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+      maxParticipants: 100,
+    });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (eventData: any) => {
+      const { data } = await apiClient.post('/events', eventData);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Event created successfully');
+      closeModal();
+      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to create event');
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: any }) => {
+      const res = await apiClient.patch(`/events/${id}`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Event updated successfully');
+      closeModal();
+      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to update event');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiClient.delete(`/events/${id}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Event deleted successfully');
+      closeModal();
+      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to delete event');
+    }
+  });
+
+  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+    resolver: zodResolver(createEventSchema),
+    defaultValues: {
+      title: '', description: '', shortDescription: '', venue: '', eventType: 'INDIVIDUAL',
+      startDate: new Date().toISOString().slice(0, 16), endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16), maxParticipants: 100,
+    }
+  });
+
+  const openEditModal = (event: any) => {
+    reset({
+      title: event.title,
+      description: event.description,
+      shortDescription: event.shortDescription || '',
+      venue: event.venue || '',
+      eventType: event.eventType,
+      startDate: new Date(event.startDate).toISOString().slice(0, 16),
+      endDate: new Date(event.endDate).toISOString().slice(0, 16),
+      maxParticipants: event.maxParticipants || 100,
+    });
+    setModalState({ type: 'EDIT', event });
+  };
+
+  const onSubmit = (formData: any) => {
+    const payload = {
+      ...formData,
+      startDate: new Date(formData.startDate).toISOString(),
+      endDate: new Date(formData.endDate).toISOString(),
+      maxParticipants: Number(formData.maxParticipants)
+    };
+    if (modalState.type === 'EDIT' && modalState.event) {
+      updateMutation.mutate({ id: modalState.event.id, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
 
   const statusColors: Record<string, string> = {
     UPCOMING: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
@@ -35,7 +131,10 @@ export default function AdminEventsPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Events Management</h1>
           <p className="text-muted-foreground">Manage hackathons, workshops, and seminars.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 btn-glow">
+        <button 
+          onClick={() => setModalState({ type: 'CREATE', event: null })}
+          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 btn-glow"
+        >
           <Plus size={18} />
           Create Event
         </button>
@@ -110,10 +209,10 @@ export default function AdminEventsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                        <button onClick={() => openEditModal(event)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                           <Edit size={16} />
                         </button>
-                        <button className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+                        <button onClick={() => setModalState({ type: 'DELETE', event })} className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -149,6 +248,170 @@ export default function AdminEventsPage() {
           </div>
         )}
       </div>
+
+      {/* Create/Edit Event Modal */}
+      <AnimatePresence>
+        {(modalState.type === 'CREATE' || modalState.type === 'EDIT') && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 shadow-2xl relative z-10"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-20">
+                <h2 className="text-xl font-bold text-white">{modalState.type === 'EDIT' ? 'Edit Event' : 'Create New Event'}</h2>
+                <button onClick={closeModal} className="text-muted-foreground hover:text-white p-2">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-1.5">Event Title</label>
+                    <input
+                      {...register('title')}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                      placeholder="e.g. Code-O-Fiesta 2026"
+                    />
+                    {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title.message as string}</p>}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-1.5">Event Type</label>
+                      <select
+                        {...register('eventType')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-white focus:border-violet-500 outline-none"
+                      >
+                        <option value="INDIVIDUAL">Individual</option>
+                        <option value="TEAM">Team</option>
+                        <option value="BOTH">Both</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-1.5">Max Participants</label>
+                      <input
+                        type="number"
+                        {...register('maxParticipants')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-1.5">Start Date & Time</label>
+                      <input
+                        type="datetime-local"
+                        {...register('startDate')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                      />
+                      {errors.startDate && <p className="text-xs text-red-400 mt-1">{errors.startDate.message as string}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-1.5">End Date & Time</label>
+                      <input
+                        type="datetime-local"
+                        {...register('endDate')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                      />
+                      {errors.endDate && <p className="text-xs text-red-400 mt-1">{errors.endDate.message as string}</p>}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-1.5">Venue</label>
+                    <input
+                      {...register('venue')}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                      placeholder="e.g. IT Department Auditorium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-1.5">Short Description</label>
+                    <textarea
+                      {...register('shortDescription')}
+                      rows={2}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none resize-none"
+                      placeholder="Brief summary for cards..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-1.5">Full Description</label>
+                    <textarea
+                      {...register('description')}
+                      rows={5}
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none resize-none"
+                      placeholder="Detailed event description..."
+                    />
+                    {errors.description && <p className="text-xs text-red-400 mt-1">{errors.description.message as string}</p>}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10 sticky bottom-0 bg-background/80 backdrop-blur-md pb-4">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="px-4 py-2 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                    className="flex items-center gap-2 px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 disabled:opacity-70 btn-glow"
+                  >
+                    {(createMutation.isPending || updateMutation.isPending) ? <Loader2 size={18} className="animate-spin" /> : 'Save Event'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {modalState.type === 'DELETE' && modalState.event && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card w-full max-w-md rounded-2xl border border-white/10 shadow-2xl relative z-10 p-6 text-center"
+            >
+              <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={32} className="text-red-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Delete Event</h2>
+              <p className="text-muted-foreground mb-6">
+                Are you sure you want to delete <span className="font-semibold text-white">{modalState.event.title}</span>? This action cannot be undone.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteMutation.mutate(modalState.event.id)}
+                  disabled={deleteMutation.isPending}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-red-600/20 disabled:opacity-70 btn-glow"
+                >
+                  {deleteMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Yes, Delete Event'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

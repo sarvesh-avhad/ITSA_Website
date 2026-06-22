@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronDown, Search } from 'lucide-react';
+import { Menu, X, ChevronDown, Search, LogOut, LayoutDashboard, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GlobalSearch } from './global-search';
 import { HelmetProvider } from 'react-helmet-async';
+import { useAuthStore } from '@/stores/auth.store';
 
 const navLinks = [
   { label: 'Home', href: '/' },
@@ -20,6 +21,7 @@ export function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
+  const { user, isAuthenticated, logout } = useAuthStore();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -115,12 +117,40 @@ export function MainLayout() {
               <Search size={20} />
             </button>
 
-            <Link
-              to="/auth/login"
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white hover:from-violet-500 hover:to-violet-400 transition-all duration-300 shadow-lg shadow-violet-600/20 hover:shadow-violet-500/30 btn-glow"
-            >
-              Get Started
-            </Link>
+            {isAuthenticated && user ? (
+              <div className="hidden sm:flex items-center gap-2">
+                {(user.role === 'ADMIN' || user.role === 'COORDINATOR') && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-all duration-300"
+                  >
+                    <Shield size={16} />
+                    Admin
+                  </Link>
+                )}
+                <Link
+                  to="/dashboard/registrations"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-violet-600/20 text-violet-300 hover:bg-violet-600/30 border border-violet-500/20 transition-all duration-300"
+                >
+                  <LayoutDashboard size={16} />
+                  Dashboard
+                </Link>
+                <button
+                  onClick={() => logout()}
+                  className="p-2 rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors ml-1"
+                  title="Sign Out"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/auth/login"
+                className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white hover:from-violet-500 hover:to-violet-400 transition-all duration-300 shadow-lg shadow-violet-600/20 hover:shadow-violet-500/30 btn-glow"
+              >
+                Get Started
+              </Link>
+            )}
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -157,12 +187,43 @@ export function MainLayout() {
                     {link.label}
                   </Link>
                 ))}
-                <Link
-                  to="/auth/login"
-                  className="block w-full text-center px-4 py-3 mt-4 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white font-semibold text-sm"
-                >
-                  Get Started
-                </Link>
+                
+                <div className="pt-4 mt-2 border-t border-white/10 space-y-2">
+                  {isAuthenticated && user ? (
+                    <>
+                      {(user.role === 'ADMIN' || user.role === 'COORDINATOR') && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white hover:bg-white/5 transition-colors"
+                        >
+                          <Shield size={18} className="text-violet-400" />
+                          Admin Dashboard
+                        </Link>
+                      )}
+                      <Link
+                        to="/dashboard/registrations"
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white hover:bg-white/5 transition-colors"
+                      >
+                        <LayoutDashboard size={18} className="text-violet-400" />
+                        Student Dashboard
+                      </Link>
+                      <button
+                        onClick={() => logout()}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-400/10 transition-colors"
+                      >
+                        <LogOut size={18} />
+                        Sign Out
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      to="/auth/login"
+                      className="block w-full text-center px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white font-semibold text-sm"
+                    >
+                      Get Started
+                    </Link>
+                  )}
+                </div>
               </div>
             </motion.div>
           )}

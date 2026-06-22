@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
-import { Search, Loader2, ShieldAlert } from 'lucide-react';
+import { Search, Loader2, ShieldAlert, X, AlertTriangle, UserCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 const fetchUsers = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/admin/users?page=${page}&limit=10&search=${search}`);
@@ -11,13 +13,53 @@ const fetchUsers = async (page: number, search: string) => {
 };
 
 export default function AdminUsersPage() {
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [modalState, setModalState] = useState<{ type: 'ROLE' | 'SUSPEND' | null, user: any | null }>({ type: null, user: null });
+  const [selectedRole, setSelectedRole] = useState<string>('USER');
   
   const { data, isLoading } = useQuery({
     queryKey: ['admin-users', page, search],
     queryFn: () => fetchUsers(page, search),
   });
+
+  const closeModal = () => setModalState({ type: null, user: null });
+
+  const roleMutation = useMutation({
+    mutationFn: async ({ id, role }: { id: string, role: string }) => {
+      const res = await apiClient.patch(`/admin/users/${id}/role`, { role });
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('User role updated');
+      closeModal();
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to update role');
+    }
+  });
+
+  const suspendMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiClient.post(`/admin/users/${id}/suspend`);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('User suspended successfully');
+      closeModal();
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to suspend user');
+    }
+  });
+
+  const openRoleModal = (user: any) => {
+    setSelectedRole(user.role);
+    setModalState({ type: 'ROLE', user });
+  };
 
   const roleColors: Record<string, string> = {
     USER: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30',
@@ -97,9 +139,14 @@ export default function AdminUsersPage() {
                       {format(new Date(user.createdAt), 'MMM d, yyyy')}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                        <ShieldAlert size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openRoleModal(user)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Manage Role">
+                          <UserCog size={16} />
+                        </button>
+                        <button onClick={() => setModalState({ type: 'SUSPEND', user })} className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Suspend User">
+                          <ShieldAlert size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -108,7 +155,6 @@ export default function AdminUsersPage() {
           </table>
         </div>
         
-        {/* Pagination Details (Basic) */}
         {!isLoading && data?.meta && (
           <div className="p-4 border-t border-white/10 flex items-center justify-between text-sm text-muted-foreground bg-white/[0.02]">
             <div>
@@ -133,6 +179,95 @@ export default function AdminUsersPage() {
           </div>
         )}
       </div>
+
+      {/* Role Management Modal */}
+      <AnimatePresence>
+        {modalState.type === 'ROLE' && modalState.user && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card w-full max-w-md rounded-2xl border border-white/10 shadow-2xl relative z-10"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Manage User Role</h2>
+                <button onClick={closeModal} className="text-muted-foreground hover:text-white p-2">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6">
+                <p className="text-muted-foreground mb-4">
+                  Update role for <span className="text-white font-medium">{modalState.user.name}</span> ({modalState.user.email}).
+                </p>
+                <div className="space-y-4">
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-white focus:border-violet-500 outline-none"
+                  >
+                    <option value="USER">User (Standard)</option>
+                    <option value="MEMBER">ITSA Member</option>
+                    <option value="COORDINATOR">Event Coordinator</option>
+                    <option value="ADMIN">Administrator</option>
+                  </select>
+                </div>
+              </div>
+              <div className="p-6 border-t border-white/10 flex justify-end gap-3">
+                <button onClick={closeModal} className="px-4 py-2 rounded-xl border border-white/10 text-white hover:bg-white/5 font-medium transition-colors">
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => roleMutation.mutate({ id: modalState.user.id, role: selectedRole })}
+                  disabled={roleMutation.isPending || selectedRole === modalState.user.role}
+                  className="flex items-center gap-2 px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 disabled:opacity-70 btn-glow"
+                >
+                  {roleMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Save Changes'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Suspend Confirmation Modal */}
+      <AnimatePresence>
+        {modalState.type === 'SUSPEND' && modalState.user && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card w-full max-w-md rounded-2xl border border-white/10 shadow-2xl relative z-10 p-6 text-center"
+            >
+              <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={32} className="text-red-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">Suspend User</h2>
+              <p className="text-muted-foreground mb-6">
+                Are you sure you want to suspend <span className="font-semibold text-white">{modalState.user.name}</span>? They will lose access to their account immediately.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={closeModal}
+                  className="px-4 py-2.5 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => suspendMutation.mutate(modalState.user.id)}
+                  disabled={suspendMutation.isPending}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-red-600/20 disabled:opacity-70 btn-glow"
+                >
+                  {suspendMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Yes, Suspend User'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
