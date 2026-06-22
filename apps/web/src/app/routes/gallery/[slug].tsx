@@ -18,11 +18,11 @@ const fetchAlbumDetail = async (slug: string) => {
     title: slug.replace(/-/g, ' ').toUpperCase(),
     description: 'This is a sample event description showcasing our past events and hackathons. Click on any media to view it in full size.',
     media: [
-      { id: '1', type: 'IMAGE', url: 'https://placehold.co/800x600/1a1a2e/7c3aed?text=Photo+1', caption: 'Event Kickoff' },
-      { id: '2', type: 'IMAGE', url: 'https://placehold.co/800x600/1a1a2e/06b6d4?text=Photo+2', caption: 'Keynote Speaker' },
-      { id: '3', type: 'IMAGE', url: 'https://placehold.co/800x600/1a1a2e/f59e0b?text=Photo+3', caption: 'Networking Session' },
-      { id: '4', type: 'IMAGE', url: 'https://placehold.co/800x600/1a1a2e/ec4899?text=Photo+4', caption: 'Prize Distribution' },
-      { id: '5', type: 'IMAGE', url: 'https://placehold.co/800x600/1a1a2e/10b981?text=Photo+5', caption: 'Group Photo' },
+      { id: '1', type: 'IMAGE', url: '/assets/gallery/code-o-fiesta/photo1.jpg', caption: 'Event Highlight 1' },
+      { id: '2', type: 'IMAGE', url: '/assets/gallery/code-o-fiesta/photo2.jpg', caption: 'Event Highlight 2' },
+      { id: '3', type: 'IMAGE', url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=800', caption: 'Networking Session' },
+      { id: '4', type: 'IMAGE', url: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800', caption: 'Prize Distribution' },
+      { id: '5', type: 'IMAGE', url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=800', caption: 'Group Photo' },
     ]
   };
 };

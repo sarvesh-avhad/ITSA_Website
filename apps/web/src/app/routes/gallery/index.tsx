@@ -10,7 +10,7 @@ const DUMMY_ALBUMS = [
     id: 'dummy-1',
     title: 'Code-O-Fiesta 2026',
     slug: 'code-o-fiesta-2026',
-    coverImageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
+    coverImageUrl: '/assets/gallery/code-o-fiesta/photo1.jpg',
     mediaCount: 45,
     year: 2026,
     event: { title: 'Code-O-Fiesta' }
@@ -19,7 +19,7 @@ const DUMMY_ALBUMS = [
     id: 'dummy-2',
     title: 'StackStride Web Dev',
     slug: 'stackstride',
-    coverImageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800',
+    coverImageUrl: '/assets/gallery/code-o-fiesta/photo2.jpg',
     mediaCount: 32,
     year: 2026,
     event: { title: 'Workshop' }
