@@ -12,6 +12,7 @@ import cmsRoutes from '@/modules/cms/cms.routes';
 import contactRoutes from '@/modules/contact/contact.routes';
 import { prisma } from '@/lib/prisma';
 import { redis } from '@/lib/redis';
+import uploadRoutes from '@/modules/upload/upload.routes';
 
 export const apiRouter = Router();
 
@@ -76,4 +77,5 @@ apiRouter.use('/blog', blogRoutes);
 apiRouter.use('/certificates', certificateRoutes);
 apiRouter.use('/cms', cmsRoutes);
 apiRouter.use('/contact', contactRoutes);
+apiRouter.use('/upload', uploadRoutes);
 
