@@ -207,14 +207,14 @@ export default function AdminGalleryPage() {
                     <Loader2 className="w-6 h-6 animate-spin text-violet-500 mx-auto" />
                   </td>
                 </tr>
-              ) : data?.data?.length === 0 ? (
+              ) : !data || data.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
                     No albums found.
                   </td>
                 </tr>
               ) : (
-                data?.data?.map((album: any) => (
+                data.map((album: any) => (
                   <tr key={album.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
