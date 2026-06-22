@@ -12,7 +12,6 @@ const navLinks = [
   { label: 'Events', href: '/events' },
   { label: 'Gallery', href: '/gallery' },
   { label: 'Sponsors', href: '/sponsors' },
-  { label: 'Blog', href: '/blog' },
   { label: 'Contact', href: '/contact' },
 ];
 
@@ -67,7 +66,10 @@ export function MainLayout() {
             <div className="relative w-10 h-10 flex items-center justify-center">
               <img src="/ITSA_logo.png" alt="ITSA Logo" className="w-8 h-8 object-contain relative z-10" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-white hidden sm:block">ITSA</span>
+            <div className="hidden sm:flex flex-col">
+              <span className="font-bold text-xl tracking-tight text-white leading-none">ITSA</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">Dept. of IT</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}

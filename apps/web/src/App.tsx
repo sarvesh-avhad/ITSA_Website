@@ -18,8 +18,6 @@ import AlbumDetailPage from '@/app/routes/gallery/[slug]';
 import SponsorsPage from '@/app/routes/sponsors';
 import AboutPage from '@/app/routes/about';
 import ContactPage from '@/app/routes/contact';
-import StudioPage from '@/app/routes/studio';
-import JournalPage from '@/app/routes/journal';
 import AdminDashboardPage from '@/app/routes/admin/index';
 import AdminUsersPage from '@/app/routes/admin/users';
 import AdminEventsPage from '@/app/routes/admin/events';
@@ -51,8 +49,6 @@ export default function App() {
             <Route path="/sponsors" element={<SponsorsPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
-            <Route path="/studio" element={<StudioPage />} />
-            <Route path="/journal" element={<JournalPage />} />
           </Route>
 
           {/* Auth routes without main layout */}
