@@ -52,8 +52,7 @@ export function MainLayout() {
         </div>
 
         {/* ========== GLASSMORPHISM NAVBAR ========== */}
-        {!isHome && (
-      <motion.header
+        <motion.header
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
           scrolled ? 'glass-strong shadow-lg shadow-black/20' : 'bg-transparent'
@@ -229,7 +228,6 @@ export function MainLayout() {
           )}
         </AnimatePresence>
       </motion.header>
-      )}
 
       {/* ========== MAIN CONTENT ========== */}
       <main className="flex-1">

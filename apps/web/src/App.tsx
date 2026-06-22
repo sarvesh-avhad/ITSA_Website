@@ -34,10 +34,40 @@ const queryClient = new QueryClient({
   },
 });
 
+import { useEffect } from 'react';
+import apiClient from '@/lib/api-client';
+import { useAuthStore } from '@/stores/auth.store';
+
+function AuthInitializer({ children }: { children: React.ReactNode }) {
+  const { setUser, logout, setLoading } = useAuthStore();
+
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const { data } = await apiClient.get('/auth/me');
+        setUser(data.data);
+      } catch (err) {
+        logout();
+      } finally {
+        setLoading(false);
+      }
+    };
+    initAuth();
+  }, [setUser, logout, setLoading]);
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <AuthInitializer>
+        <BrowserRouter>
         <Routes>
           {/* Public routes with main layout */}
           <Route element={<MainLayout />}>
@@ -72,6 +102,7 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      </AuthInitializer>
       <Toaster
         theme="dark"
         position="top-right"

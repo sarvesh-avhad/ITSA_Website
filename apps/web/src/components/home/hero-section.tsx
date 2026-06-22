@@ -3,37 +3,6 @@ import { Link } from 'react-router-dom';
 export function HeroSection() {
   return (
     <div className="relative min-h-screen w-full flex flex-col font-sans">
-      {/* Navigation Bar */}
-      <nav className="relative z-10 flex flex-row items-center justify-between px-8 py-6 max-w-7xl mx-auto w-full">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/ITSA_logo.png" alt="ITSA Logo" className="h-10 w-auto object-contain" />
-        </Link>
-
-        <div className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-sm text-foreground transition-colors">
-            Home
-          </Link>
-          <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            About
-          </Link>
-          <Link to="/events" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Events
-          </Link>
-          <Link to="/gallery" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Gallery
-          </Link>
-          <Link to="/sponsors" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Sponsors
-          </Link>
-          <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Contact
-          </Link>
-        </div>
-
-        <Link to="/events" className="liquid-glass rounded-full px-6 py-2.5 text-sm text-foreground hover:scale-[1.03] transition-transform cursor-pointer">
-          Explore Events
-        </Link>
-      </nav>
 
       {/* Hero Content */}
       <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-32 pb-40 py-[90px] flex-1">
