@@ -63,12 +63,55 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6 mt-8">
-        {/* Placeholder for charts or recent activity */}
-        <div className="glass-card rounded-2xl p-6 border border-white/5 min-h-[400px] flex items-center justify-center text-muted-foreground">
-          Recent Activity Component (To be implemented)
+        {/* Recent Activity */}
+        <div className="glass-card rounded-2xl p-6 border border-white/5 flex flex-col">
+          <h3 className="text-xl font-bold text-white mb-6">Recent Activity</h3>
+          <div className="space-y-6 flex-1">
+            {[
+              { text: "New user registered", time: "10 minutes ago", color: "text-blue-400", bg: "bg-blue-400/20" },
+              { text: "Registration for Code-O-Fiesta", time: "1 hour ago", color: "text-emerald-400", bg: "bg-emerald-400/20" },
+              { text: "Event StackStride updated", time: "3 hours ago", color: "text-amber-400", bg: "bg-amber-400/20" },
+              { text: "Gallery album published", time: "1 day ago", color: "text-violet-400", bg: "bg-violet-400/20" },
+            ].map((activity, i) => (
+              <div key={i} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <div className={`w-3 h-3 rounded-full mt-1.5 ${activity.bg} ${activity.color} ring-4 ring-background`} />
+                  {i !== 3 && <div className="w-0.5 h-full bg-white/5 mt-2" />}
+                </div>
+                <div className="flex-1 pb-2">
+                  <p className="text-white text-sm font-medium">{activity.text}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="glass-card rounded-2xl p-6 border border-white/5 min-h-[400px] flex items-center justify-center text-muted-foreground">
-          Registrations Chart (To be implemented)
+
+        {/* Mock Registration Chart */}
+        <div className="glass-card rounded-2xl p-6 border border-white/5 flex flex-col">
+          <h3 className="text-xl font-bold text-white mb-6">Registration Activity (Last 7 Days)</h3>
+          <div className="flex-1 flex items-end gap-2 h-[250px] mt-auto">
+            {[40, 25, 60, 30, 80, 45, 90].map((height, i) => (
+              <div key={i} className="flex-1 flex flex-col justify-end group relative">
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/80 px-2 py-1 rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  {height} regs
+                </div>
+                <div 
+                  className="w-full bg-gradient-to-t from-violet-600/50 to-violet-400 rounded-t-sm transition-all duration-500 group-hover:opacity-80" 
+                  style={{ height: `${height}%` }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-4 text-xs text-muted-foreground">
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+            <span>Sun</span>
+          </div>
         </div>
       </div>
     </div>

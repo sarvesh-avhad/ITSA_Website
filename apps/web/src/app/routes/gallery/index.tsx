@@ -10,28 +10,46 @@ const DUMMY_ALBUMS = [
     id: 'dummy-1',
     title: 'Code-O-Fiesta 2026',
     slug: 'code-o-fiesta-2026',
-    coverImageUrl: 'https://placehold.co/800x600/1a1a2e/7c3aed?text=Code-O-Fiesta',
+    coverImageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
     mediaCount: 45,
     year: 2026,
     event: { title: 'Code-O-Fiesta' }
   },
   {
     id: 'dummy-2',
-    title: 'Hackathon Workshop',
-    slug: 'hackathon-workshop',
-    coverImageUrl: 'https://placehold.co/800x600/1a1a2e/06b6d4?text=Workshop',
-    mediaCount: 12,
+    title: 'StackStride Web Dev',
+    slug: 'stackstride',
+    coverImageUrl: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800',
+    mediaCount: 32,
     year: 2026,
     event: { title: 'Workshop' }
   },
   {
     id: 'dummy-3',
-    title: 'Alumni Meet 2025',
-    slug: 'alumni-meet-2025',
-    coverImageUrl: 'https://placehold.co/800x600/1a1a2e/f59e0b?text=Alumni+Meet',
-    mediaCount: 128,
+    title: 'Teachers Day',
+    slug: 'teachers-day',
+    coverImageUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=800',
+    mediaCount: 88,
     year: 2025,
+    event: { title: 'Celebration' }
+  },
+  {
+    id: 'dummy-4',
+    title: 'Alumni Nexus',
+    slug: 'alumni-nexus',
+    coverImageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=800',
+    mediaCount: 120,
+    year: 2026,
     event: { title: 'Networking' }
+  },
+  {
+    id: 'dummy-5',
+    title: 'Industry Visit - TCS',
+    slug: 'industry-visit',
+    coverImageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=800',
+    mediaCount: 65,
+    year: 2025,
+    event: { title: 'Industrial Visit' }
   }
 ];
 
