@@ -4,13 +4,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createAlbumSchema } from '@itsa/shared';
 import apiClient from '@/lib/api-client';
-import { Search, Loader2, Image as ImageIcon, UploadCloud, X, Plus, Trash2 } from 'lucide-react';
+import { Search, Loader2, Image as ImageIcon, UploadCloud, X, Plus, Trash2, Edit2, Images } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const fetchAlbums = async (page: number, search: string) => {
-  const { data } = await apiClient.get(`/gallery?page=${page}&limit=10&search=${search}`);
+  const { data } = await apiClient.get(`/gallery/admin/albums?page=${page}&limit=10&search=${search}`);
+  return data.data;
+};
+
+const fetchAlbumDetails = async (slug: string) => {
+  const { data } = await apiClient.get(`/gallery/albums/${slug}`);
   return data.data;
 };
 
@@ -18,9 +23,16 @@ export default function AdminGalleryPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   
+  // Modals state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingAlbum, setEditingAlbum] = useState<any>(null);
+  
+  const [isManagePhotosOpen, setIsManagePhotosOpen] = useState(false);
+  const [managingAlbum, setManagingAlbum] = useState<any>(null);
+  
+  const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -28,9 +40,15 @@ export default function AdminGalleryPage() {
     queryFn: () => fetchAlbums(page, search),
   });
 
+  const { data: albumDetails, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ['album-details', managingAlbum?.slug],
+    queryFn: () => fetchAlbumDetails(managingAlbum.slug),
+    enabled: !!managingAlbum,
+  });
+
   const createAlbumMutation = useMutation({
     mutationFn: async (albumData: any) => {
-      const { data } = await apiClient.post('/gallery', albumData);
+      const { data } = await apiClient.post('/gallery/albums', albumData);
       return data;
     },
     onSuccess: () => {
@@ -39,14 +57,35 @@ export default function AdminGalleryPage() {
       reset();
       queryClient.invalidateQueries({ queryKey: ['admin-albums'] });
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error?.message || 'Failed to create album');
-    }
+    onError: (err: any) => toast.error(err.response?.data?.error?.message || 'Failed to create album')
+  });
+
+  const updateAlbumMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: any }) => {
+      const res = await apiClient.patch(`/gallery/albums/${id}`, data);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Album updated successfully');
+      setIsEditModalOpen(false);
+      setEditingAlbum(null);
+      resetEdit();
+      queryClient.invalidateQueries({ queryKey: ['admin-albums'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error?.message || 'Failed to update album')
+  });
+
+  const deleteAlbumMutation = useMutation({
+    mutationFn: async (id: string) => await apiClient.delete(`/gallery/albums/${id}`),
+    onSuccess: () => {
+      toast.success('Album deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-albums'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error?.message || 'Failed to delete album')
   });
 
   const uploadPhotosMutation = useMutation({
     mutationFn: async ({ albumId, files }: { albumId: string, files: FileList }) => {
-      // 1. Upload to Cloudinary via our backend batch route
       const formData = new FormData();
       Array.from(files).forEach((file) => formData.append('files', file));
       
@@ -54,51 +93,70 @@ export default function AdminGalleryPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      const uploadedPhotos = uploadRes.data.data; // Array of { url, publicId }
-
-      // 2. Attach these photos to the Album
+      const uploadedPhotos = uploadRes.data.data;
       const attachPromises = uploadedPhotos.map((photo: any) => 
-        apiClient.post(`/gallery/${albumId}/photos`, {
+        apiClient.post(`/gallery/albums/${albumId}/media`, {
           url: photo.url,
           publicId: photo.publicId,
           caption: photo.originalName,
+          type: 'IMAGE'
         })
       );
       await Promise.all(attachPromises);
-
       return uploadedPhotos;
     },
     onSuccess: () => {
       toast.success('Photos uploaded successfully!');
       setSelectedAlbum(null);
       queryClient.invalidateQueries({ queryKey: ['admin-albums'] });
+      if (managingAlbum) queryClient.invalidateQueries({ queryKey: ['album-details'] });
     },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.error?.message || 'Failed to upload photos');
-    }
+    onError: (err: any) => toast.error(err.response?.data?.error?.message || 'Failed to upload photos')
+  });
+
+  const deleteMediaMutation = useMutation({
+    mutationFn: async (mediaId: string) => await apiClient.delete(`/gallery/media/${mediaId}`),
+    onSuccess: () => {
+      toast.success('Photo deleted');
+      queryClient.invalidateQueries({ queryKey: ['album-details'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-albums'] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error?.message || 'Failed to delete photo')
   });
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: zodResolver(createAlbumSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      year: new Date().getFullYear(),
-      isPublished: true,
-    }
+    defaultValues: { title: '', description: '', year: new Date().getFullYear(), isPublished: true }
   });
 
-  const onSubmit = (formData: any) => {
-    createAlbumMutation.mutate({
-      ...formData,
-      year: Number(formData.year)
-    });
+  const { register: registerEdit, handleSubmit: handleEditSubmit, formState: { errors: editErrors }, reset: resetEdit } = useForm({
+    resolver: zodResolver(createAlbumSchema),
+  });
+
+  const onSubmitCreate = (formData: any) => {
+    createAlbumMutation.mutate({ ...formData, year: Number(formData.year) });
+  };
+
+  const onSubmitEdit = (formData: any) => {
+    if (!editingAlbum) return;
+    updateAlbumMutation.mutate({ id: editingAlbum.id, data: { ...formData, year: Number(formData.year) } });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !selectedAlbum) return;
     toast.info(`Uploading ${e.target.files.length} photos... Please wait.`);
     uploadPhotosMutation.mutate({ albumId: selectedAlbum.id, files: e.target.files });
+  };
+
+  const openEditModal = (album: any) => {
+    setEditingAlbum(album);
+    resetEdit({
+      title: album.title,
+      description: album.description || '',
+      year: album.year,
+      isPublished: album.isPublished,
+    });
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -125,10 +183,7 @@ export default function AdminGalleryPage() {
               type="text"
               placeholder="Search albums..."
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-muted-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
             />
           </div>
@@ -173,12 +228,8 @@ export default function AdminGalleryPage() {
                         <div className="font-medium text-white">{album.title}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {album.year}
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {album._count?.photos || 0} photos
-                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{album.year}</td>
+                    <td className="px-6 py-4 text-muted-foreground">{album._count?.media ?? album.mediaCount ?? 0} photos</td>
                     <td className="px-6 py-4">
                       {album.isPublished ? (
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-emerald-500/20 text-emerald-300 border-emerald-500/30">PUBLISHED</span>
@@ -189,10 +240,17 @@ export default function AdminGalleryPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
+                          onClick={() => { setManagingAlbum(album); setIsManagePhotosOpen(true); }}
+                          className="p-2 text-muted-foreground hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
+                          title="Manage Photos"
+                        >
+                          <Images size={16} />
+                        </button>
+                        <button 
                           onClick={() => { setSelectedAlbum(album); fileInputRef.current?.click(); }}
                           disabled={uploadPhotosMutation.isPending && selectedAlbum?.id === album.id}
                           className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 rounded-lg transition-colors" 
-                          title="Upload Photos"
+                          title="Upload New Photos"
                         >
                           {(uploadPhotosMutation.isPending && selectedAlbum?.id === album.id) ? (
                             <Loader2 size={14} className="animate-spin" />
@@ -201,7 +259,22 @@ export default function AdminGalleryPage() {
                           )}
                           Upload
                         </button>
-                        <button className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => openEditModal(album)}
+                          className="p-2 text-muted-foreground hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                          title="Edit Album"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete the album "${album.title}"?`)) {
+                              deleteAlbumMutation.mutate(album.id);
+                            }
+                          }}
+                          className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                          title="Delete Album"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -214,14 +287,9 @@ export default function AdminGalleryPage() {
         </div>
       </div>
 
-      {/* Hidden File Input for uploading */}
       <input 
-        type="file" 
-        multiple 
-        accept="image/jpeg,image/png,image/webp" 
-        ref={fileInputRef} 
-        onChange={handleFileUpload}
-        className="hidden" 
+        type="file" multiple accept="image/jpeg,image/png,image/webp" 
+        ref={fileInputRef} onChange={handleFileUpload} className="hidden" 
       />
 
       {/* Create Album Modal */}
@@ -230,9 +298,7 @@ export default function AdminGalleryPage() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCreateModalOpen(false)} />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="glass-card w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl relative z-10"
             >
               <div className="p-6 border-b border-white/10 flex items-center justify-between">
@@ -242,53 +308,134 @@ export default function AdminGalleryPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+              <form onSubmit={handleSubmit(onSubmitCreate)} className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-white mb-1.5">Album Title</label>
-                  <input
-                    {...register('title')}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
-                    placeholder="e.g. Code-O-Fiesta 2026 Memories"
-                  />
+                  <input {...register('title')} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none" placeholder="e.g. Code-O-Fiesta 2026 Memories" />
                   {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title.message as string}</p>}
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-white mb-1.5">Year</label>
-                  <input
-                    type="number"
-                    {...register('year')}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
-                  />
+                  <input type="number" {...register('year')} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-white mb-1.5">Description (Optional)</label>
-                  <textarea
-                    {...register('description')}
-                    rows={3}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none resize-none"
-                    placeholder="Describe the album..."
-                  />
+                  <textarea {...register('description')} rows={3} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none resize-none" placeholder="Describe the album..." />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={createAlbumMutation.isPending}
-                    className="flex items-center gap-2 px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 disabled:opacity-70 btn-glow"
-                  >
+                  <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium">Cancel</button>
+                  <button type="submit" disabled={createAlbumMutation.isPending} className="flex items-center gap-2 px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 disabled:opacity-70 btn-glow">
                     {createAlbumMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Create Album'}
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Album Modal */}
+      <AnimatePresence>
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card w-full max-w-lg rounded-2xl border border-white/10 shadow-2xl relative z-10"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Edit Album</h2>
+                <button onClick={() => setIsEditModalOpen(false)} className="text-muted-foreground hover:text-white p-2">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditSubmit(onSubmitEdit)} className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-1.5">Album Title</label>
+                  <input {...registerEdit('title')} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none" placeholder="e.g. Code-O-Fiesta 2026 Memories" />
+                  {editErrors.title && <p className="text-xs text-red-400 mt-1">{editErrors.title.message as string}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white mb-1.5">Year</label>
+                  <input type="number" {...registerEdit('year')} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white mb-1.5">Description (Optional)</label>
+                  <textarea {...registerEdit('description')} rows={3} className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none resize-none" placeholder="Describe the album..." />
+                </div>
+                <div className="flex items-center gap-3">
+                  <input type="checkbox" {...registerEdit('isPublished')} id="isPublished" className="w-4 h-4 rounded border-white/10 bg-white/5 accent-violet-500" />
+                  <label htmlFor="isPublished" className="text-sm font-medium text-white">Publish this album globally</label>
+                </div>
+                <div className="flex items-center justify-end gap-3 pt-4">
+                  <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-xl border border-white/10 text-white hover:bg-white/5 transition-colors font-medium">Cancel</button>
+                  <button type="submit" disabled={updateAlbumMutation.isPending} className="flex items-center gap-2 px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 disabled:opacity-70 btn-glow">
+                    {updateAlbumMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Manage Photos Modal */}
+      <AnimatePresence>
+        {isManagePhotosOpen && managingAlbum && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsManagePhotosOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card w-full max-w-4xl rounded-2xl border border-white/10 shadow-2xl relative z-10 max-h-[90vh] flex flex-col"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between shrink-0">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Manage Photos</h2>
+                  <p className="text-sm text-muted-foreground">Album: {managingAlbum.title}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => { setSelectedAlbum(managingAlbum); fileInputRef.current?.click(); }}
+                    className="flex items-center gap-2 px-4 py-2 bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 rounded-xl font-medium transition-colors"
+                  >
+                    <UploadCloud size={16} />
+                    Upload More
+                  </button>
+                  <button onClick={() => setIsManagePhotosOpen(false)} className="text-muted-foreground hover:text-white p-2">
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 overflow-y-auto flex-1">
+                {isLoadingDetails ? (
+                  <div className="py-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>
+                ) : !albumDetails?.media || albumDetails.media.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">No photos in this album yet.</div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {albumDetails.media.map((photo: any) => (
+                      <div key={photo.id} className="group relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10">
+                        <img src={photo.url} alt={photo.caption || 'Album photo'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button 
+                            onClick={() => {
+                              if (confirm('Are you sure you want to delete this photo?')) {
+                                deleteMediaMutation.mutate(photo.id);
+                              }
+                            }}
+                            className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/40 transition-colors"
+                            title="Delete Photo"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           </div>
         )}

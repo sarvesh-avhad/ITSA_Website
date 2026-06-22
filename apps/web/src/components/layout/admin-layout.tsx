@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Calendar, Image as ImageIcon, FileText, Settings, Award, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Image as ImageIcon, FileText, Settings, Award, LogOut, Menu, X, Home } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -96,6 +96,13 @@ export function AdminLayout() {
                 <p className="text-xs text-muted-foreground truncate">{user.role}</p>
               </div>
             </div>
+            <Link
+              to="/"
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10 transition-colors mb-2"
+            >
+              <Home size={18} />
+              Back to Website
+            </Link>
             <button
               onClick={() => logout()}
               className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors"

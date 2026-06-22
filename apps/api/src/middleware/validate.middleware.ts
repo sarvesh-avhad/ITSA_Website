@@ -10,8 +10,13 @@ export function validate(schema: ZodSchema, source: 'body' | 'query' | 'params' 
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       const data = schema.parse(req[source]);
-      // Replace with parsed (and potentially transformed) data
-      req[source] = data;
+      // For req.body we can reassign, but req.query and req.params might have only getters
+      if (source === 'body') {
+        req.body = data;
+      } else {
+        // Just merge the validated data back into the object instead of replacing it
+        Object.assign(req[source], data);
+      }
       next();
     } catch (err) {
       if (err instanceof ZodError) {

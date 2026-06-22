@@ -95,9 +95,9 @@ export default function GalleryPage() {
                 >
                   {/* Cover Image Placeholder */}
                   <div className="relative aspect-video bg-gradient-to-br from-violet-600/20 to-cyan-500/20 overflow-hidden">
-                    {album.coverImageUrl ? (
+                    {album.coverUrl || album.coverImageUrl ? (
                       <img 
-                        src={album.coverImageUrl} 
+                        src={album.coverUrl || album.coverImageUrl} 
                         alt={album.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                         loading="lazy"
