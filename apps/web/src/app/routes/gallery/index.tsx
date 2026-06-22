@@ -62,9 +62,9 @@ export default function GalleryPage() {
           <div className="flex justify-center py-20">
             <div className="w-12 h-12 border-4 border-violet-600/30 border-t-violet-600 rounded-full animate-spin" />
           </div>
-        ) : (data?.data?.length === 0 || !data?.data) ? (
+        ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {DUMMY_ALBUMS.map((album: any, index: number) => (
+            {(!data?.data || data.data.length === 0 ? DUMMY_ALBUMS : data.data).map((album: any, index: number) => (
               <motion.div
                 key={album.id}
                 initial={{ opacity: 0, y: 20 }}
