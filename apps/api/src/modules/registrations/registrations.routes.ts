@@ -33,7 +33,7 @@ router.get('/my', authenticate, async (req, res, next) => {
 // Cancel registration
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
-    await registrationsService.cancelRegistration(req.params.id as string, req.user!.userId, req);
+    await registrationsService.cancelRegistration((req.params.id as string) as string, req.user!.userId, req);
     res.json({ success: true, data: { message: 'Registration cancelled' } });
   } catch (err) { next(err); }
 });
@@ -41,7 +41,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 // Admin: Update status
 router.patch('/:id/status', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
   try {
-    const result = await registrationsService.updateStatus(req.params.id as string, req.body.status, req);
+    const result = await registrationsService.updateStatus((req.params.id as string) as string, req.body.status, req);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 });
@@ -49,7 +49,7 @@ router.patch('/:id/status', authenticate, requireRole('COORDINATOR'), async (req
 // Coordinator: Mark attendance
 router.post('/:id/attendance', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
   try {
-    const result = await registrationsService.markAttendance(req.params.id as string, req);
+    const result = await registrationsService.markAttendance((req.params.id as string) as string, req);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 });

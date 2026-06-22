@@ -41,7 +41,7 @@ router.get('/', validateQuery(paginationSchema), async (req, res, next) => {
 router.get('/:slug', async (req, res, next) => {
   try {
     const announcement = await prisma.announcement.findUnique({
-      where: { slug: req.params.slug, deletedAt: null },
+      where: { slug: (req.params.slug as string), deletedAt: null },
     });
     if (!announcement) throw new NotFoundError('Announcement');
     res.json({ success: true, data: announcement });
@@ -68,13 +68,13 @@ router.post('/', authenticate, requireRole('COORDINATOR'), validate(createAnnoun
 // Update
 router.patch('/:id', authenticate, requireRole('COORDINATOR'), validate(updateAnnouncementSchema), async (req, res, next) => {
   try {
-    const existing = await prisma.announcement.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.announcement.findUnique({ where: { id: (req.params.id as string) } });
     if (!existing) throw new NotFoundError('Announcement');
 
     const data: any = { ...req.body };
     if (req.body.isPublished && !existing.publishedAt) data.publishedAt = new Date();
 
-    const announcement = await prisma.announcement.update({ where: { id: req.params.id }, data });
+    const announcement = await prisma.announcement.update({ where: { id: (req.params.id as string) }, data });
     await createAuditLog(req, { action: 'UPDATE', resource: 'Announcement', resourceId: announcement.id });
     res.json({ success: true, data: announcement });
   } catch (err) { next(err); }
@@ -83,8 +83,8 @@ router.patch('/:id', authenticate, requireRole('COORDINATOR'), validate(updateAn
 // Delete
 router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    await prisma.announcement.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
-    await createAuditLog(req, { action: 'DELETE', resource: 'Announcement', resourceId: req.params.id as string });
+    await prisma.announcement.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
+    await createAuditLog(req, { action: 'DELETE', resource: 'Announcement', resourceId: (req.params.id as string) as string });
     res.json({ success: true, data: { message: 'Announcement deleted' } });
   } catch (err) { next(err); }
 });

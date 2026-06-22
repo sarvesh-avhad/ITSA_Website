@@ -64,7 +64,7 @@ router.patch('/:id/status', authenticate, requireRole('COORDINATOR'), validate(s
   try {
     const { status } = req.body;
     const message = await prisma.contact.update({
-      where: { id: req.params.id },
+      where: { id: (req.params.id as string) },
       data: { status, repliedAt: status === 'RESOLVED' ? new Date() : undefined },
     });
 

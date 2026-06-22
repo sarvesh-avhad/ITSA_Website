@@ -44,7 +44,7 @@ router.get('/posts', validateQuery(paginationSchema), async (req, res, next) => 
 router.get('/posts/:slug', async (req, res, next) => {
   try {
     const post = await prisma.blogPost.findUnique({
-      where: { slug: req.params.slug, deletedAt: null },
+      where: { slug: (req.params.slug as string), deletedAt: null },
       include: {
         author: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
         category: true,
@@ -91,14 +91,14 @@ router.post('/posts', authenticate, requireRole('COORDINATOR'), validate(createB
 // Update post
 router.patch('/posts/:id', authenticate, requireRole('COORDINATOR'), validate(updateBlogPostSchema), async (req, res, next) => {
   try {
-    const existing = await prisma.blogPost.findUnique({ where: { id: req.params.id } });
+    const existing = await prisma.blogPost.findUnique({ where: { id: (req.params.id as string) } });
     if (!existing) throw new NotFoundError('Blog Post');
 
     const data: any = { ...req.body };
     if (req.body.content) data.readTime = Math.ceil(req.body.content.split(/\s+/).length / 200);
     if (req.body.status === 'PUBLISHED' && !existing.publishedAt) data.publishedAt = new Date();
 
-    const post = await prisma.blogPost.update({ where: { id: req.params.id }, data });
+    const post = await prisma.blogPost.update({ where: { id: (req.params.id as string) }, data });
     await createAuditLog(req, { action: 'UPDATE', resource: 'BlogPost', resourceId: post.id });
     res.json({ success: true, data: post });
   } catch (err) { next(err); }
@@ -107,8 +107,8 @@ router.patch('/posts/:id', authenticate, requireRole('COORDINATOR'), validate(up
 // Delete post
 router.delete('/posts/:id', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    await prisma.blogPost.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
-    await createAuditLog(req, { action: 'DELETE', resource: 'BlogPost', resourceId: req.params.id as string });
+    await prisma.blogPost.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
+    await createAuditLog(req, { action: 'DELETE', resource: 'BlogPost', resourceId: (req.params.id as string) as string });
     res.json({ success: true, data: { message: 'Post deleted' } });
   } catch (err) { next(err); }
 });
@@ -116,12 +116,12 @@ router.delete('/posts/:id', authenticate, requireRole('ADMIN'), async (req, res,
 // Publish/unpublish
 router.patch('/posts/:id/publish', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    const post = await prisma.blogPost.findUnique({ where: { id: req.params.id } });
+    const post = await prisma.blogPost.findUnique({ where: { id: (req.params.id as string) } });
     if (!post) throw new NotFoundError('Blog Post');
 
     const newStatus = post.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
     const updated = await prisma.blogPost.update({
-      where: { id: req.params.id },
+      where: { id: (req.params.id as string) },
       data: { status: newStatus as any, publishedAt: newStatus === 'PUBLISHED' ? new Date() : post.publishedAt },
     });
     res.json({ success: true, data: updated });

@@ -48,12 +48,12 @@ router.get('/albums', validateQuery(paginationSchema), async (req, res, next) =>
 // Get album with media
 router.get('/albums/:slug', async (req, res, next) => {
   try {
-    const cacheKey = `gallery:album:${req.params.slug}`;
+    const cacheKey = `gallery:album:${(req.params.slug as string)}`;
     const cached = await getCache<any>(cacheKey);
     if (cached) return res.json({ success: true, data: cached });
 
     const album = await prisma.galleryAlbum.findUnique({
-      where: { slug: req.params.slug, deletedAt: null },
+      where: { slug: (req.params.slug as string), deletedAt: null },
       include: {
         media: { orderBy: { sortOrder: 'asc' } },
         event: { select: { id: true, title: true, slug: true } },
@@ -82,7 +82,7 @@ router.post('/albums', authenticate, requireRole('COORDINATOR'), validate(create
 // Update album
 router.patch('/albums/:id', authenticate, requireRole('COORDINATOR'), validate(updateAlbumSchema), async (req, res, next) => {
   try {
-      const album = await prisma.galleryAlbum.update({ where: { id: req.params.id }, data: req.body });
+      const album = await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: req.body });
     await invalidateCacheByPrefix('gallery');
     await createAuditLog(req, { action: 'UPDATE', resource: 'GalleryAlbum', resourceId: album.id });
     res.json({ success: true, data: album });
@@ -92,9 +92,9 @@ router.patch('/albums/:id', authenticate, requireRole('COORDINATOR'), validate(u
 // Delete album
 router.delete('/albums/:id', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    await prisma.galleryAlbum.update({ where: { id: req.params.id }, data: { deletedAt: new Date() } });
+    await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
     await invalidateCacheByPrefix('gallery');
-    await createAuditLog(req, { action: 'DELETE', resource: 'Album', resourceId: req.params.id as string });
+    await createAuditLog(req, { action: 'DELETE', resource: 'Album', resourceId: (req.params.id as string) as string });
     res.json({ success: true, data: { message: 'Album deleted' } });
   } catch (err) { next(err); }
 });
@@ -104,7 +104,7 @@ router.post('/albums/:id/media', authenticate, requireRole('COORDINATOR'), async
   try {
     const { type = 'IMAGE', url, thumbnailUrl, publicId, width, height, sizeBytes, caption } = req.body;
     const media = await prisma.galleryMedia.create({
-      data: { albumId: req.params.id, type, url, thumbnailUrl, publicId, width, height, sizeBytes, caption },
+      data: { albumId: (req.params.id as string), type, url, thumbnailUrl, publicId, width, height, sizeBytes, caption },
     });
     await invalidateCacheByPrefix('gallery');
     await createAuditLog(req, { action: 'UPLOAD', resource: 'GalleryMedia', resourceId: media.id });
@@ -115,7 +115,7 @@ router.post('/albums/:id/media', authenticate, requireRole('COORDINATOR'), async
 // Delete media
 router.delete('/media/:id', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
   try {
-    await prisma.galleryMedia.delete({ where: { id: req.params.id } });
+    await prisma.galleryMedia.delete({ where: { id: (req.params.id as string) } });
     await invalidateCacheByPrefix('gallery');
     res.json({ success: true, data: { message: 'Media deleted' } });
   } catch (err) { next(err); }
