@@ -1,0 +1,33 @@
+{
+  "name": "itsa-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ITSA Enterprise Platform — Information Technology Students Association",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "npm@10.8.1",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:api": "npm run dev --workspace=@itsa/api",
+    "dev:web": "npm run dev --workspace=@itsa/web",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "db:generate": "npm run db:generate --workspace=@itsa/api",
+    "db:migrate": "npm run db:migrate --workspace=@itsa/api",
+    "db:push": "npm run db:push --workspace=@itsa/api",
+    "db:seed": "npm run db:seed --workspace=@itsa/api",
+    "db:studio": "npm run db:studio --workspace=@itsa/api",
+    "clean": "turbo run clean && rimraf node_modules"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "rimraf": "^6.0.0"
+  }
+}

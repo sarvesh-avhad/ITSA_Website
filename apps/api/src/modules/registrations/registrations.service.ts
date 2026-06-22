@@ -1,0 +1,274 @@
+import type { Request, Response } from 'express';
+import { prisma } from '@/lib/prisma';
+import { redis, getCache, setCache, invalidateCacheByPrefix } from '@/lib/redis';
+import { NotFoundError, BadRequestError, ConflictError } from '@/lib/errors';
+import { createAuditLog } from '@/middleware/audit.middleware';
+import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
+import { PAGINATION, CACHE_TTL } from '@itsa/shared';
+import type { IndividualRegistrationRequest, TeamRegistrationRequest } from '@itsa/shared';
+import QRCode from 'qrcode';
+import { nanoid } from 'nanoid';
+
+class RegistrationsService {
+  async registerIndividual(data: IndividualRegistrationRequest, userId: string, req: Request) {
+    const event = await prisma.event.findUnique({ where: { id: data.eventId, deletedAt: null } });
+    if (!event) throw new NotFoundError('Event');
+    if (!event.isPublished) throw new BadRequestError('Event is not open for registration');
+
+    // Check deadline
+    if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+      throw new BadRequestError('Registration deadline has passed');
+    }
+
+    // Check capacity
+    if (event.maxParticipants && event.currentCount >= event.maxParticipants) {
+      throw new BadRequestError('Event is at full capacity');
+    }
+
+    // Check duplicate registration
+    const existing = await prisma.registration.findUnique({
+      where: { userId_eventId: { userId, eventId: data.eventId } },
+    });
+    if (existing) throw new ConflictError('You are already registered for this event');
+
+    // Check event type
+    if (event.eventType === 'TEAM') {
+      throw new BadRequestError('This event requires team registration');
+    }
+
+    // Generate QR code
+    const qrId = `ITSA-${nanoid(10)}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(qrId, {
+      width: 300,
+      margin: 2,
+      color: { dark: '#ffffff', light: '#0a0a0f' },
+    });
+
+    // Create registration
+    const registration = await prisma.$transaction(async (tx: any) => {
+      const reg = await tx.registration.create({
+        data: {
+          userId,
+          eventId: data.eventId,
+          status: 'APPROVED',
+          qrCode: qrId,
+          formData: data.formData ? (data.formData as object) : undefined,
+        },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, branch: true, year: true, phone: true } },
+          event: { select: { id: true, title: true, slug: true, startDate: true, endDate: true, venue: true, posterUrl: true } },
+        },
+      });
+
+      // Increment event count
+      await tx.event.update({
+        where: { id: data.eventId },
+        data: { currentCount: { increment: 1 } },
+      });
+
+      return reg;
+    });
+
+    // Send confirmation email (async)
+    const emailData = registrationConfirmationEmail({
+      studentName: registration.user.firstName,
+      eventName: registration.event.title,
+      eventDate: new Date(registration.event.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
+      venue: registration.event.venue || 'TBA',
+      qrCodeUrl: qrCodeDataUrl,
+    });
+    sendEmail({ to: registration.user.email, ...emailData }).catch((err) =>
+      logger.error({ err }, 'Failed to send registration email')
+    );
+
+    await invalidateCacheByPrefix('events');
+    await createAuditLog(req, {
+      action: 'CREATE',
+      resource: 'Registration',
+      resourceId: registration.id,
+      newData: { eventId: data.eventId, userId },
+    });
+
+    return { ...registration, qrCodeDataUrl };
+  }
+
+  async registerTeam(data: TeamRegistrationRequest, userId: string, req: Request) {
+    const event = await prisma.event.findUnique({ where: { id: data.eventId, deletedAt: null } });
+    if (!event) throw new NotFoundError('Event');
+    if (!event.isPublished) throw new BadRequestError('Event is not open for registration');
+
+    if (event.eventType === 'INDIVIDUAL') {
+      throw new BadRequestError('This event only supports individual registration');
+    }
+
+    if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+      throw new BadRequestError('Registration deadline has passed');
+    }
+
+    const totalSize = data.memberEmails.length + 1; // +1 for leader
+    if (event.maxTeamSize && totalSize > event.maxTeamSize) {
+      throw new BadRequestError(`Team size cannot exceed ${event.maxTeamSize} members`);
+    }
+    if (event.minTeamSize && totalSize < event.minTeamSize) {
+      throw new BadRequestError(`Team must have at least ${event.minTeamSize} members`);
+    }
+
+    // Verify all member emails exist
+    const members = await prisma.user.findMany({
+      where: { email: { in: data.memberEmails }, deletedAt: null },
+    });
+    if (members.length !== data.memberEmails.length) {
+      const found = members.map((m: any) => m.email);
+      const missing = data.memberEmails.filter((e) => !found.includes(e));
+      throw new BadRequestError(`Users not found: ${missing.join(', ')}`);
+    }
+
+    // Check no team member (including leader) is already registered
+    const allUserIds = [userId, ...members.map((m: any) => m.id)];
+    const existingRegs = await prisma.registration.findMany({
+      where: { eventId: data.eventId, userId: { in: allUserIds }, deletedAt: null },
+    });
+    if (existingRegs.length > 0) {
+      throw new ConflictError('One or more team members are already registered for this event');
+    }
+
+    const qrId = `ITSA-T-${nanoid(10)}`;
+
+    const result = await prisma.$transaction(async (tx: any) => {
+      // Create team
+      const team = await tx.team.create({
+        data: {
+          name: data.teamName,
+          eventId: data.eventId,
+          leaderId: userId,
+        },
+      });
+
+      // Add team members
+      await tx.teamMember.createMany({
+        data: members.map((m: any) => ({ teamId: team.id, userId: m.id })),
+      });
+
+      // Create registrations for all members
+      const registrations = await Promise.all(
+        allUserIds.map((uid) =>
+          tx.registration.create({
+            data: {
+              userId: uid,
+              eventId: data.eventId,
+              teamId: team.id,
+              status: 'APPROVED',
+              qrCode: uid === userId ? qrId : `ITSA-T-${nanoid(10)}`,
+              formData: data.formData ? (data.formData as object) : undefined,
+            },
+          })
+        )
+      );
+
+      // Update event count
+      await tx.event.update({
+        where: { id: data.eventId },
+        data: { currentCount: { increment: allUserIds.length } },
+      });
+
+      return { team, registrations };
+    });
+
+    await invalidateCacheByPrefix('events');
+    await createAuditLog(req, {
+      action: 'CREATE',
+      resource: 'Team Registration',
+      resourceId: result.team.id,
+      newData: { teamName: data.teamName, eventId: data.eventId, memberCount: allUserIds.length },
+    });
+
+    return result;
+  }
+
+  async getMyRegistrations(userId: string) {
+    return prisma.registration.findMany({
+      where: { userId, deletedAt: null },
+      include: {
+        event: { select: { id: true, title: true, slug: true, startDate: true, endDate: true, venue: true, posterUrl: true, status: true } },
+        team: {
+          include: {
+            leader: { select: { id: true, firstName: true, lastName: true, email: true } },
+            members: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async cancelRegistration(id: string, userId: string, req: Request) {
+    const registration = await prisma.registration.findUnique({
+      where: { id },
+      include: { event: true },
+    });
+
+    if (!registration || registration.userId !== userId) {
+      throw new NotFoundError('Registration');
+    }
+
+    if (registration.status === 'CANCELLED') {
+      throw new BadRequestError('Registration is already cancelled');
+    }
+
+    await prisma.$transaction([
+      prisma.registration.update({
+        where: { id },
+        data: { status: 'CANCELLED', deletedAt: new Date() },
+      }),
+      prisma.event.update({
+        where: { id: registration.eventId },
+        data: { currentCount: { decrement: 1 } },
+      }),
+    ]);
+
+    await invalidateCacheByPrefix('events');
+    await createAuditLog(req, {
+      action: 'DELETE',
+      resource: 'Registration',
+      resourceId: id,
+    });
+  }
+
+  async updateStatus(regId: string, status: string, req: Request) {
+    const registration = await prisma.registration.findUnique({ where: { id: regId } });
+    if (!registration) throw new NotFoundError('Registration');
+
+    const updated = await prisma.registration.update({
+      where: { id: regId },
+      data: { status: status as any },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        event: { select: { title: true } },
+      },
+    });
+
+    await createAuditLog(req, {
+      action: status === 'APPROVED' ? 'APPROVE' : 'REJECT',
+      resource: 'Registration',
+      resourceId: regId,
+      oldData: { status: registration.status },
+      newData: { status },
+    });
+
+    return updated;
+  }
+
+  async markAttendance(regId: string, req: Request) {
+    const registration = await prisma.registration.findUnique({ where: { id: regId } });
+    if (!registration) throw new NotFoundError('Registration');
+    if (registration.attendanceMarked) throw new BadRequestError('Attendance already marked');
+
+    return prisma.registration.update({
+      where: { id: regId },
+      data: { attendanceMarked: true, attendanceAt: new Date() },
+    });
+  }
+}
+
+export const registrationsService = new RegistrationsService();

@@ -1,0 +1,551 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  VISITOR
+  STUDENT
+  COORDINATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum EventStatus {
+  DRAFT
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum EventType {
+  INDIVIDUAL
+  TEAM
+  BOTH
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WAITLISTED
+  CANCELLED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum SponsorTier {
+  TITLE
+  GOLD
+  SILVER
+  BRONZE
+  ASSOCIATE
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AnnouncementCategory {
+  NOTICE
+  CLUB_UPDATE
+  PLACEMENT_DRIVE
+  WORKSHOP
+  GENERAL
+}
+
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  APPROVE
+  REJECT
+  UPLOAD
+  DOWNLOAD
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?
+  firstName       String
+  lastName        String
+  phone           String?
+  prn             String?   @unique
+  branch          String?
+  year            Int?
+  avatarUrl       String?
+  googleId        String?   @unique
+  role            UserRole  @default(VISITOR)
+  isActive        Boolean   @default(true)
+  isEmailVerified Boolean   @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  registrations Registration[]
+  teamsLed      Team[]         @relation("TeamLeader")
+  teamMembers   TeamMember[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  blogPosts     BlogPost[]
+  certificates  Certificate[]
+  contacts      Contact[]
+
+  @@index([email])
+  @@index([prn])
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        UserRole         @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  resource    String
+  action      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  roles RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Event {
+  id                   String      @id @default(cuid())
+  title                String
+  slug                 String      @unique
+  description          String      @db.Text
+  shortDescription     String?     @db.VarChar(300)
+  rules                String?     @db.Text
+  faqs                 Json?
+  schedule             Json?
+  bannerUrl            String?
+  posterUrl            String?
+  venue                String?
+  startDate            DateTime
+  endDate              DateTime
+  registrationDeadline DateTime?
+  maxParticipants      Int?
+  currentCount         Int         @default(0)
+  eventType            EventType   @default(INDIVIDUAL)
+  status               EventStatus @default(DRAFT)
+  isFeatured           Boolean     @default(false)
+  isPublished          Boolean     @default(false)
+  categoryId           String?
+  maxTeamSize          Int?        @default(4)
+  minTeamSize          Int?        @default(2)
+  createdBy            String
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  deletedAt            DateTime?
+
+  category      EventCategory?  @relation(fields: [categoryId], references: [id])
+  registrations Registration[]
+  teams         Team[]
+  albums        GalleryAlbum[]
+  certificates  Certificate[]
+  sponsors      SponsorEvent[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([startDate])
+  @@index([categoryId])
+  @@index([deletedAt])
+  @@map("events")
+}
+
+model EventCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events Event[]
+
+  @@map("event_categories")
+}
+
+model Registration {
+  id               String             @id @default(cuid())
+  userId           String
+  eventId          String
+  teamId           String?
+  status           RegistrationStatus @default(PENDING)
+  qrCode           String?            @unique
+  attendanceMarked Boolean            @default(false)
+  attendanceAt     DateTime?
+  formData         Json?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  team  Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, eventId])
+  @@index([eventId])
+  @@index([status])
+  @@index([qrCode])
+  @@index([deletedAt])
+  @@map("registrations")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  eventId   String
+  leaderId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  leader        User           @relation("TeamLeader", fields: [leaderId], references: [id])
+  members       TeamMember[]
+  registrations Registration[]
+
+  @@unique([name, eventId])
+  @@index([eventId])
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+model GalleryAlbum {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  description String?
+  coverUrl    String?
+  eventId     String?
+  year        Int
+  isPublished Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  event Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  media GalleryMedia[]
+
+  @@index([slug])
+  @@index([eventId])
+  @@index([year])
+  @@index([deletedAt])
+  @@map("gallery_albums")
+}
+
+model GalleryMedia {
+  id           String    @id @default(cuid())
+  albumId      String
+  type         MediaType @default(IMAGE)
+  url          String
+  thumbnailUrl String?
+  publicId     String?
+  width        Int?
+  height       Int?
+  sizeBytes    Int?
+  caption      String?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  album GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@index([albumId])
+  @@index([type])
+  @@map("gallery_media")
+}
+
+model Sponsor {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  logoUrl     String
+  description String?     @db.Text
+  websiteUrl  String?
+  tier        SponsorTier
+  isActive    Boolean     @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  clickCount  Int         @default(0)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  events SponsorEvent[]
+
+  @@index([tier])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("sponsors")
+}
+
+model SponsorEvent {
+  id        String   @id @default(cuid())
+  sponsorId String
+  eventId   String
+  year      Int
+  createdAt DateTime @default(now())
+
+  sponsor Sponsor @relation(fields: [sponsorId], references: [id], onDelete: Cascade)
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([sponsorId, eventId])
+  @@map("sponsor_events")
+}
+
+model Announcement {
+  id          String               @id @default(cuid())
+  title       String
+  slug        String               @unique
+  content     String               @db.Text
+  excerpt     String?              @db.VarChar(500)
+  category    AnnouncementCategory @default(GENERAL)
+  isPinned    Boolean              @default(false)
+  isPublished Boolean              @default(false)
+  publishedAt DateTime?
+  authorId    String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  deletedAt   DateTime?
+
+  @@index([slug])
+  @@index([category])
+  @@index([isPublished])
+  @@index([deletedAt])
+  @@map("announcements")
+}
+
+model BlogPost {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String     @unique
+  content     String     @db.Text
+  excerpt     String?    @db.VarChar(500)
+  coverUrl    String?
+  status      PostStatus @default(DRAFT)
+  isFeatured  Boolean    @default(false)
+  publishedAt DateTime?
+  authorId    String
+  categoryId  String?
+  metaTitle   String?
+  metaDesc    String?    @db.VarChar(160)
+  readTime    Int?
+  viewCount   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+
+  author   User          @relation(fields: [authorId], references: [id])
+  category BlogCategory? @relation(fields: [categoryId], references: [id])
+
+  @@index([slug])
+  @@index([status])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([deletedAt])
+  @@map("blog_posts")
+}
+
+model BlogCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  posts BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model Contact {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String        @db.Text
+  status    ContactStatus @default(NEW)
+  userId    String?
+  repliedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([email])
+  @@map("contacts")
+}
+
+model Certificate {
+  id            String   @id @default(cuid())
+  certificateId String   @unique
+  userId        String
+  eventId       String
+  templateId    String?
+  studentName   String
+  eventName     String
+  date          DateTime
+  position      String?
+  pdfUrl        String?
+  isDownloaded  Boolean  @default(false)
+  downloadCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  event Event @relation(fields: [eventId], references: [id])
+
+  @@index([certificateId])
+  @@index([userId])
+  @@index([eventId])
+  @@map("certificates")
+}
+
+model CertificateTemplate {
+  id           String   @id @default(cuid())
+  name         String
+  htmlTemplate String   @db.Text
+  cssStyles    String?  @db.Text
+  placeholders Json
+  thumbnailUrl String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("certificate_templates")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  resource   String
+  resourceId String?
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model SiteConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  section   String
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([section])
+  @@map("site_configs")
+}
