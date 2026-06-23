@@ -69,8 +69,8 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) throw new NotFoundError('User');
 
-    // Rule 1: SUPER_ADMIN cannot be modified by anyone except themselves
-    if (user.role === 'SUPER_ADMIN' && req.user!.userId !== user.id) {
+    // Rule 1: SUPER_ADMIN cannot be modified by anyone except themselves or another SUPER_ADMIN
+    if (user.role === 'SUPER_ADMIN' && currentAdminRole !== 'SUPER_ADMIN') {
       return res.status(403).json({ success: false, error: { message: 'Cannot modify Super Admin accounts' } });
     }
 

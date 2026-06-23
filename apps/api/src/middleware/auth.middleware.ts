@@ -71,16 +71,29 @@ export function optionalAuth(req: Request, _res: Response, next: NextFunction): 
  * Checks that the authenticated user has at least the specified role.
  */
 export function requireRole(minimumRole: UserRole) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      return next(new UnauthorizedError('Authentication required'));
-    }
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        return next(new UnauthorizedError('Authentication required'));
+      }
 
-    if (!hasMinimumRole(req.user.role, minimumRole)) {
-      return next(new ForbiddenError(`Requires ${minimumRole} role or higher`));
-    }
+      const user = await prisma.user.findUnique({ 
+        where: { id: req.user.userId }, 
+        select: { role: true, isActive: true, permissions: true } 
+      });
 
-    next();
+      if (!user) return next(new UnauthorizedError('User not found'));
+      if (!user.isActive) return next(new ForbiddenError('Account is suspended'));
+
+      req.user.role = user.role;
+      req.user.permissions = user.permissions;
+
+      if (!hasMinimumRole(req.user.role, minimumRole)) {
+        return next(new ForbiddenError(`Requires ${minimumRole} role or higher`));
+      }
+
+      next();
+    } catch (err) { next(err); }
   };
 }
 
@@ -89,23 +102,36 @@ export function requireRole(minimumRole: UserRole) {
  * Grants access if user has the specific permission, OR if they are a SUPER_ADMIN.
  */
 export function requirePermission(permission: string) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      return next(new UnauthorizedError('Authentication required'));
-    }
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      if (!req.user) {
+        return next(new UnauthorizedError('Authentication required'));
+      }
 
-    if (req.user.role === 'SUPER_ADMIN') {
-      return next();
-    }
+      const user = await prisma.user.findUnique({ 
+        where: { id: req.user.userId }, 
+        select: { role: true, isActive: true, permissions: true } 
+      });
 
-    const basePermissions = ROLE_BASE_PERMISSIONS[req.user.role as UserRole] || [];
-    const userPermissions = req.user.permissions || [];
+      if (!user) return next(new UnauthorizedError('User not found'));
+      if (!user.isActive) return next(new ForbiddenError('Account is suspended'));
 
-    if (!basePermissions.includes(permission) && !userPermissions.includes(permission)) {
-      return next(new ForbiddenError(`Requires permission: ${permission}`));
-    }
+      req.user.role = user.role;
+      req.user.permissions = user.permissions;
 
-    next();
+      if (req.user.role === 'SUPER_ADMIN') {
+        return next();
+      }
+
+      const basePermissions = ROLE_BASE_PERMISSIONS[req.user.role as UserRole] || [];
+      const userPermissions = req.user.permissions || [];
+
+      if (!basePermissions.includes(permission) && !userPermissions.includes(permission)) {
+        return next(new ForbiddenError(`Requires permission: ${permission}`));
+      }
+
+      next();
+    } catch (err) { next(err); }
   };
 }
 

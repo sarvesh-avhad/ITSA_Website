@@ -21,6 +21,8 @@ const adminLinks = [
   { label: 'Certificates', href: '/admin/certificates', icon: Award, permission: PERMISSIONS.CERTIFICATES_GENERATE },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText, permission: PERMISSIONS.AUDIT_LOGS_READ },
   { label: 'Settings', href: '/admin/settings', icon: Settings, permission: PERMISSIONS.SETTINGS_MANAGE },
+  { label: 'Database', href: '/admin/database', icon: Settings, permission: PERMISSIONS.DB_BACKUP_RESTORE },
+  { label: 'Security', href: '/admin/security', icon: ShieldCheck, permission: PERMISSIONS.DB_SECURITY_MANAGE },
 ];
 
 export function AdminLayout() {

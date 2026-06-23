@@ -37,7 +37,7 @@ router.get('/', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res,
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || '';
     
-    const result = await registrationsService.getAllRegistrations(page, limit, search);
+    const result = await registrationsService.getAllRegistrations(page, limit, search, req.user!);
     res.json({ success: true, ...result });
   } catch (err) { next(err); }
 });

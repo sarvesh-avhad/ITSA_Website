@@ -254,25 +254,31 @@ export default function AdminEventsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => togglePublishMutation.mutate({ id: event.id, isPublished: !event.isPublished })}
-                          disabled={togglePublishMutation.isPending}
-                          title={event.isPublished ? "Unpublish event" : "Publish event"}
-                          className={cn(
-                            "p-2 rounded-lg transition-colors disabled:opacity-50",
-                            event.isPublished 
-                              ? "text-emerald-400 hover:bg-emerald-400/10" 
-                              : "text-zinc-400 hover:text-white hover:bg-white/10"
-                          )}
-                        >
-                          {event.isPublished ? <Eye size={16} /> : <EyeOff size={16} />}
-                        </button>
-                        <button onClick={() => openEditModal(event)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Edit event">
-                          <Edit size={16} />
-                        </button>
-                        <button onClick={() => setModalState({ type: 'DELETE', event })} className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Delete event">
-                          <Trash2 size={16} />
-                        </button>
+                        {hasPermission(PERMISSIONS.EVENTS_UPDATE) && (
+                          <>
+                            <button 
+                              onClick={() => togglePublishMutation.mutate({ id: event.id, isPublished: !event.isPublished })}
+                              disabled={togglePublishMutation.isPending}
+                              title={event.isPublished ? "Unpublish event" : "Publish event"}
+                              className={cn(
+                                "p-2 rounded-lg transition-colors disabled:opacity-50",
+                                event.isPublished 
+                                  ? "text-emerald-400 hover:bg-emerald-400/10" 
+                                  : "text-zinc-400 hover:text-white hover:bg-white/10"
+                              )}
+                            >
+                              {event.isPublished ? <Eye size={16} /> : <EyeOff size={16} />}
+                            </button>
+                            <button onClick={() => openEditModal(event)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Edit event">
+                              <Edit size={16} />
+                            </button>
+                          </>
+                        )}
+                        {hasPermission(PERMISSIONS.EVENTS_DELETE) && (
+                          <button onClick={() => setModalState({ type: 'DELETE', event })} className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Delete event">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

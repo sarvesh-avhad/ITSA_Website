@@ -27,6 +27,13 @@ class EventsService {
 
     if (!(filters as any).isAdmin) {
       where.isPublished = true;
+    } else if ((filters as any).userRole === 'EVENT_COORDINATOR' && (filters as any).userId) {
+      // Event Coordinators can only see events they are assigned to
+      where.coordinators = {
+        some: {
+          id: (filters as any).userId
+        }
+      };
     }
 
     if (filters.status) where.status = filters.status;

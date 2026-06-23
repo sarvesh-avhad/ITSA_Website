@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '@/middleware/auth.middleware';
+import { authenticate, requireRole, requirePermission } from '@/middleware/auth.middleware';
 import { validate, validateQuery } from '@/middleware/validate.middleware';
-import { createAlbumSchema, updateAlbumSchema, paginationSchema } from '@itsa/shared';
+import { createAlbumSchema, updateAlbumSchema, paginationSchema, PERMISSIONS } from '@itsa/shared';
 import { prisma } from '@/lib/prisma';
 import { getCache, setCache, invalidateCacheByPrefix } from '@/lib/redis';
 import { NotFoundError } from '@/lib/errors';
@@ -46,7 +46,7 @@ router.get('/albums', validateQuery(paginationSchema), async (req, res, next) =>
 });
 
 // Admin List albums
-router.get('/admin/albums', authenticate, requireRole('EVENT_COORDINATOR'), validateQuery(paginationSchema), async (req, res, next) => {
+router.get('/admin/albums', authenticate, requireRole('ITSA_MEMBER'), validateQuery(paginationSchema), async (req, res, next) => {
   try {
     const { page = 1, limit = 12, search } = req.query as any;
     const skip = (Number(page) - 1) * Number(limit);
@@ -98,7 +98,7 @@ router.get('/albums/:slug', async (req, res, next) => {
 
 
 // Create album
-router.post('/albums', authenticate, requireRole('EVENT_COORDINATOR'), validate(createAlbumSchema), async (req, res, next) => {
+router.post('/albums', authenticate, requirePermission(PERMISSIONS.GALLERY_CREATE), validate(createAlbumSchema), async (req, res, next) => {
   try {
     const slug = slugify(req.body.title, { lower: true, strict: true });
     const album = await prisma.galleryAlbum.create({
@@ -116,7 +116,7 @@ router.post('/albums', authenticate, requireRole('EVENT_COORDINATOR'), validate(
 });
 
 // Update album
-router.patch('/albums/:id', authenticate, requireRole('EVENT_COORDINATOR'), validate(updateAlbumSchema), async (req, res, next) => {
+router.patch('/albums/:id', authenticate, requirePermission(PERMISSIONS.GALLERY_UPDATE), validate(updateAlbumSchema), async (req, res, next) => {
   try {
       const album = await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: req.body });
     await invalidateCacheByPrefix('gallery');
@@ -136,7 +136,7 @@ router.delete('/albums/:id', authenticate, requireRole('ADMIN'), async (req, res
 });
 
 // Upload media to album
-router.post('/albums/:id/media', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
+router.post('/albums/:id/media', authenticate, requirePermission(PERMISSIONS.GALLERY_UPLOAD), async (req, res, next) => {
   try {
     const { type = 'IMAGE', url, thumbnailUrl, publicId, width, height, sizeBytes, caption } = req.body;
     const media = await prisma.galleryMedia.create({
@@ -149,7 +149,7 @@ router.post('/albums/:id/media', authenticate, requireRole('EVENT_COORDINATOR'),
 });
 
 // Delete media
-router.delete('/media/:id', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
+router.delete('/media/:id', authenticate, requirePermission(PERMISSIONS.GALLERY_DELETE), async (req, res, next) => {
   try {
     await prisma.galleryMedia.delete({ where: { id: (req.params.id as string) } });
     await invalidateCacheByPrefix('gallery');

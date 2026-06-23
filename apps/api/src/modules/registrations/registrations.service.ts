@@ -309,10 +309,18 @@ class RegistrationsService {
     });
   }
 
-  async getAllRegistrations(page: number, limit: number, search: string) {
+  async getAllRegistrations(page: number, limit: number, search: string, user: import('@itsa/shared').JwtPayload) {
     const skip = (page - 1) * limit;
     
     const where: any = {};
+    
+    if (user.role === 'EVENT_COORDINATOR') {
+      where.event = {
+        coordinators: {
+          some: { id: user.userId }
+        }
+      };
+    }
     if (search) {
       where.OR = [
         { teamName: { contains: search, mode: 'insensitive' } },
