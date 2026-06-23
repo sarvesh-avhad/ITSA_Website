@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Calendar, Image as ImageIcon, FileText, Settings, Award, LogOut, Menu, X, Home } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Image as ImageIcon, FileText, Settings, Award, LogOut, Menu, X, Home, Mail, Megaphone, Star } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -13,6 +13,9 @@ const adminLinks = [
   { label: 'Events', href: '/admin/events', icon: Calendar },
   { label: 'Registrations', href: '/admin/registrations', icon: FileText },
   { label: 'Gallery', href: '/admin/gallery', icon: ImageIcon },
+  { label: 'Announcements', href: '/admin/announcements', icon: Megaphone },
+  { label: 'Sponsors', href: '/admin/sponsors', icon: Star },
+  { label: 'Contacts', href: '/admin/contacts', icon: Mail },
   { label: 'Certificates', href: '/admin/certificates', icon: Award },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];

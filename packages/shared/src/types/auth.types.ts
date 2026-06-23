@@ -36,6 +36,10 @@ export interface AuthUser {
   role: UserRole;
   avatarUrl: string | null;
   isEmailVerified: boolean;
+  phone?: string | null;
+  prn?: string | null;
+  branch?: string | null;
+  year?: number | null;
 }
 
 export interface JwtPayload {

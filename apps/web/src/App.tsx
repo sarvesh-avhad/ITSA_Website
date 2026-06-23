@@ -17,6 +17,7 @@ import MyRegistrationsPage from '@/app/routes/dashboard/registrations';
 import GalleryPage from '@/app/routes/gallery/index';
 import AlbumDetailPage from '@/app/routes/gallery/[slug]';
 import SponsorsPage from '@/app/routes/sponsors';
+import AnnouncementsPage from '@/app/routes/announcements';
 import AboutPage from '@/app/routes/about';
 import ContactPage from '@/app/routes/contact';
 import AdminDashboardPage from '@/app/routes/admin/index';
@@ -24,8 +25,14 @@ import AdminUsersPage from '@/app/routes/admin/users';
 import AdminEventsPage from '@/app/routes/admin/events';
 import AdminRegistrationsPage from '@/app/routes/admin/registrations';
 import AdminGalleryPage from '@/app/routes/admin/gallery';
+import AdminContactsPage from '@/app/routes/admin/contacts';
+import AdminAnnouncementsPage from '@/app/routes/admin/announcements';
+import AdminSponsorsPage from '@/app/routes/admin/sponsors';
+import AdminCertificatesPage from '@/app/routes/admin/certificates';
 import StudentDashboardPage from '@/app/routes/dashboard/index';
+import StudentCertificatesPage from '@/app/routes/dashboard/certificates';
 import StudentSettingsPage from '@/app/routes/dashboard/settings';
+import CertificateVerifyPage from '@/app/routes/certificates/verify';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -81,6 +88,8 @@ export default function App() {
             <Route path="/gallery" element={<GalleryPage />} />
             <Route path="/gallery/:slug" element={<AlbumDetailPage />} />
             <Route path="/sponsors" element={<SponsorsPage />} />
+            <Route path="/announcements" element={<AnnouncementsPage />} />
+            <Route path="/certificates/verify" element={<CertificateVerifyPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
           </Route>
@@ -97,7 +106,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<StudentDashboardPage />} />
             <Route path="registrations" element={<MyRegistrationsPage />} />
-            <Route path="certificates" element={<div className="p-8 text-center text-muted-foreground">My Certificates Coming Soon</div>} />
+            <Route path="certificates" element={<StudentCertificatesPage />} />
             <Route path="settings" element={<StudentSettingsPage />} />
           </Route>
 
@@ -108,6 +117,10 @@ export default function App() {
             <Route path="events" element={<AdminEventsPage />} />
             <Route path="registrations" element={<AdminRegistrationsPage />} />
             <Route path="gallery" element={<AdminGalleryPage />} />
+            <Route path="contacts" element={<AdminContactsPage />} />
+            <Route path="announcements" element={<AdminAnnouncementsPage />} />
+            <Route path="sponsors" element={<AdminSponsorsPage />} />
+            <Route path="certificates" element={<AdminCertificatesPage />} />
             <Route path="*" element={<div className="p-8 text-center text-muted-foreground">This admin module is coming soon.</div>} />
           </Route>
         </Routes>
