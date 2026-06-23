@@ -78,6 +78,22 @@ async function main() {
         isActive: true,
       },
     }),
+    prisma.user.upsert({
+      where: { email: 'sarveshvavhad2@gmail.com' },
+      update: {},
+      create: {
+        email: 'sarveshvavhad2@gmail.com',
+        passwordHash: studentPassword,
+        firstName: 'Sarvesh',
+        lastName: 'Avhad',
+        role: UserRole.STUDENT,
+        prn: '2023IT005',
+        branch: 'Information Technology',
+        year: 2,
+        isEmailVerified: true,
+        isActive: true,
+      },
+    }),
   ]);
   console.log(`✅ ${users.length + 1} users created`);
 

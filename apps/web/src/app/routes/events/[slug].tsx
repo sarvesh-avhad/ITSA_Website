@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { cn, timeUntil } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { SEO } from '@/components/seo';
+import { AuthModal } from '@/components/auth/auth-modal';
 
 const fetchEventDetail = async (slug: string) => {
   const { data } = await apiClient.get(`/events/${slug}`);
@@ -48,6 +49,7 @@ function CountdownTimer({ deadline }: { deadline: string }) {
 export default function EventDetailPage() {
   const { slug } = useParams();
   const { isAuthenticated } = useAuthStore();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event', slug],
@@ -128,13 +130,23 @@ export default function EventDetailPage() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
                 {isRegistrationOpen ? (
-                  <Link
-                    to={isAuthenticated ? `/events/${event.slug}/register` : `/auth/login?redirect=/events/${event.slug}`}
-                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-lg shadow-xl shadow-violet-600/25 hover:shadow-violet-500/40 hover:scale-[1.02] transition-all btn-glow"
-                  >
-                    Register Now
-                    <ArrowRight size={20} />
-                  </Link>
+                  isAuthenticated ? (
+                    <Link
+                      to={`/events/${event.slug}/register`}
+                      className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-lg shadow-xl shadow-violet-600/25 hover:shadow-violet-500/40 hover:scale-[1.02] transition-all btn-glow"
+                    >
+                      Register Now
+                      <ArrowRight size={20} />
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-lg shadow-xl shadow-violet-600/25 hover:shadow-violet-500/40 hover:scale-[1.02] transition-all btn-glow"
+                    >
+                      Register Now
+                      <ArrowRight size={20} />
+                    </button>
+                  )
                 ) : (
                   <div className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl glass border border-white/10 text-muted-foreground font-bold text-lg cursor-not-allowed">
                     <AlertCircle size={20} />
@@ -314,6 +326,12 @@ export default function EventDetailPage() {
           )}
         </div>
       </div>
+
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onSuccess={() => setIsAuthModalOpen(false)} 
+      />
     </div>
   );
 }

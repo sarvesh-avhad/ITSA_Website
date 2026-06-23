@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import { MainLayout } from '@/components/layout/main-layout';
 import { AuthLayout } from '@/components/layout/auth-layout';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import HomePage from '@/app/routes/home';
 import LoginPage from '@/app/routes/auth/login';
 import RegisterPage from '@/app/routes/auth/register';
@@ -23,6 +24,8 @@ import AdminUsersPage from '@/app/routes/admin/users';
 import AdminEventsPage from '@/app/routes/admin/events';
 import AdminRegistrationsPage from '@/app/routes/admin/registrations';
 import AdminGalleryPage from '@/app/routes/admin/gallery';
+import StudentDashboardPage from '@/app/routes/dashboard/index';
+import StudentSettingsPage from '@/app/routes/dashboard/settings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,7 +78,6 @@ export default function App() {
             <Route path="/events" element={<EventsListingPage />} />
             <Route path="/events/:slug" element={<EventDetailPage />} />
             <Route path="/events/:slug/register" element={<EventRegistrationPage />} />
-            <Route path="/dashboard/registrations" element={<MyRegistrationsPage />} />
             <Route path="/gallery" element={<GalleryPage />} />
             <Route path="/gallery/:slug" element={<AlbumDetailPage />} />
             <Route path="/sponsors" element={<SponsorsPage />} />
@@ -89,6 +91,14 @@ export default function App() {
             <Route path="register" element={<RegisterPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />
+          </Route>
+
+          {/* Dashboard routes */}
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<StudentDashboardPage />} />
+            <Route path="registrations" element={<MyRegistrationsPage />} />
+            <Route path="certificates" element={<div className="p-8 text-center text-muted-foreground">My Certificates Coming Soon</div>} />
+            <Route path="settings" element={<StudentSettingsPage />} />
           </Route>
 
           {/* Admin routes */}
