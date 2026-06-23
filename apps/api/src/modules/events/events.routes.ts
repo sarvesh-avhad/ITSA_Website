@@ -16,7 +16,6 @@ router.get('/categories', (req, res, next) => {
 });
 
 router.get('/admin', /* authenticate, requireRole('ADMIN'), */ validateQuery(eventFiltersSchema), (req, res, next) => {
-  req.query.isAdmin = 'true';
   eventsController.list(req, res).catch(next);
 });
 

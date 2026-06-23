@@ -22,6 +22,9 @@ class EventsService {
       deletedAt: null,
     };
 
+    console.log('FILTERS:', filters);
+    console.log('isAdmin value:', (filters as any).isAdmin);
+
     if (!(filters as any).isAdmin) {
       where.isPublished = true;
     }

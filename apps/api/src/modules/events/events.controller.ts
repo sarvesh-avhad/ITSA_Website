@@ -5,6 +5,9 @@ import type { CreateEventRequest, UpdateEventRequest, EventFilters } from '@itsa
 export class EventsController {
   async list(req: Request, res: Response): Promise<void> {
     const filters = req.query as unknown as EventFilters;
+    if (req.originalUrl.includes('/admin')) {
+      (filters as any).isAdmin = true;
+    }
     const result = await eventsService.list(filters);
     res.json({ success: true, data: result.data, meta: result.meta });
   }

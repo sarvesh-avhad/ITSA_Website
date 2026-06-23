@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createEventSchema } from '@itsa/shared';
 import apiClient from '@/lib/api-client';
-import { Search, Loader2, Edit, Trash2, Plus, X, AlertTriangle } from 'lucide-react';
+import { Search, Loader2, Edit, Trash2, Plus, X, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,6 +62,20 @@ export default function AdminEventsPage() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.error?.message || 'Failed to update event');
+    }
+  });
+
+  const togglePublishMutation = useMutation({
+    mutationFn: async ({ id, isPublished }: { id: string, isPublished: boolean }) => {
+      const res = await apiClient.patch(`/events/${id}`, { isPublished });
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Event visibility updated');
+      queryClient.invalidateQueries({ queryKey: ['admin-events'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to update visibility');
     }
   });
 
@@ -229,10 +243,23 @@ export default function AdminEventsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEditModal(event)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                        <button 
+                          onClick={() => togglePublishMutation.mutate({ id: event.id, isPublished: !event.isPublished })}
+                          disabled={togglePublishMutation.isPending}
+                          title={event.isPublished ? "Unpublish event" : "Publish event"}
+                          className={cn(
+                            "p-2 rounded-lg transition-colors disabled:opacity-50",
+                            event.isPublished 
+                              ? "text-emerald-400 hover:bg-emerald-400/10" 
+                              : "text-zinc-400 hover:text-white hover:bg-white/10"
+                          )}
+                        >
+                          {event.isPublished ? <Eye size={16} /> : <EyeOff size={16} />}
+                        </button>
+                        <button onClick={() => openEditModal(event)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Edit event">
                           <Edit size={16} />
                         </button>
-                        <button onClick={() => setModalState({ type: 'DELETE', event })} className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+                        <button onClick={() => setModalState({ type: 'DELETE', event })} className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Delete event">
                           <Trash2 size={16} />
                         </button>
                       </div>
