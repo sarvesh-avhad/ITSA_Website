@@ -85,6 +85,7 @@ const baseEventSchema = z.object({
   minTeamSize: z.number().int().min(1).max(10).optional(),
   isPublished: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  status: z.enum(['DRAFT', 'UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional(),
 });
 
 export const createEventSchema = baseEventSchema.refine(

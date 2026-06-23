@@ -88,7 +88,7 @@ export default function AdminEventsPage() {
       endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16), 
       registrationDeadline: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
       maxParticipants: 100,
-      minTeamSize: 2, maxTeamSize: 4, isPublished: true,
+      minTeamSize: 2, maxTeamSize: 4, isPublished: true, status: 'DRAFT'
     }
   });
 
@@ -109,6 +109,7 @@ export default function AdminEventsPage() {
       minTeamSize: event.minTeamSize || 2,
       maxTeamSize: event.maxTeamSize || 4,
       isPublished: event.isPublished ?? true,
+      status: event.status || 'DRAFT',
     });
     setModalState({ type: 'EDIT', event });
   };
@@ -309,7 +310,7 @@ export default function AdminEventsPage() {
                     {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title.message as string}</p>}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-white mb-1.5">Event Type</label>
                       <select
@@ -319,6 +320,19 @@ export default function AdminEventsPage() {
                         <option value="INDIVIDUAL">Individual</option>
                         <option value="TEAM">Team</option>
                         <option value="BOTH">Both</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-1.5">Status</label>
+                      <select
+                        {...register('status')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#121212] border border-white/10 text-white focus:border-violet-500 outline-none"
+                      >
+                        <option value="DRAFT">Draft</option>
+                        <option value="UPCOMING">Upcoming</option>
+                        <option value="ONGOING">Ongoing</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CANCELLED">Cancelled</option>
                       </select>
                     </div>
                     <div>
