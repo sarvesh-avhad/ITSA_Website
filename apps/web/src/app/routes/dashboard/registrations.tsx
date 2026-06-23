@@ -3,6 +3,7 @@ import apiClient from '@/lib/api-client';
 import { QrCode, Calendar, MapPin, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export default function MyRegistrationsPage() {
   const { data, isLoading } = useQuery({
@@ -81,16 +82,19 @@ export default function MyRegistrationsPage() {
                 {/* QR Code Section */}
                 {reg.status === 'APPROVED' && reg.qrCode && (
                   <div className="w-full md:w-auto shrink-0 bg-white p-4 rounded-xl flex flex-col items-center">
-                    {/* Placeholder for QR Code since generating data URL requires library, we display the raw ID or an image from API. For now, a mock box */}
-                    <div className="w-32 h-32 bg-gray-200 flex items-center justify-center rounded-lg border border-gray-300">
-                      <QrCode size={48} className="text-gray-400" />
+                    <div className="bg-white p-2 rounded-lg border border-gray-200">
+                      <QRCodeCanvas 
+                        value={reg.qrCode} 
+                        size={128}
+                        level="H"
+                        includeMargin={false}
+                      />
                     </div>
-                    <div className="text-[10px] font-mono text-gray-500 mt-2 tracking-widest uppercase">
+                    <div className="text-[10px] font-mono text-gray-500 mt-3 tracking-widest uppercase text-center break-all w-32">
                       {reg.qrCode}
                     </div>
                     <div className="text-xs font-semibold text-gray-900 mt-1">Show at entry</div>
-                  </div>
-                )}
+                  </div>)}
               </div>
             ))}
           </div>

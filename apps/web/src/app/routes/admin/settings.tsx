@@ -1,0 +1,206 @@
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '@/lib/api-client';
+import { Save, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function AdminSettingsPage() {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState<Record<string, any>>({});
+
+  const { data: configs, isLoading } = useQuery({
+    queryKey: ['admin-cms-config'],
+    queryFn: async () => {
+      const res = await apiClient.get('/cms');
+      return res.data.data;
+    },
+  });
+
+  useEffect(() => {
+    if (configs) {
+      const initialData: Record<string, any> = {};
+      configs.forEach((c: any) => {
+        initialData[c.key] = c.value;
+      });
+      setFormData(initialData);
+    }
+  }, [configs]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (updates: any[]) => {
+      const res = await apiClient.patch('/cms', updates);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Settings updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-cms-config'] });
+      // Invalidate public cms cache
+      queryClient.invalidateQueries({ queryKey: ['public-cms'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to update settings');
+    }
+  });
+
+  const handleChange = (key: string, value: any) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSave = (section: string) => {
+    // Only save keys belonging to this section
+    const relevantConfigs = configs.filter((c: any) => c.section === section);
+    const updates = relevantConfigs.map((c: any) => ({
+      key: c.key,
+      value: formData[c.key],
+      section: c.section
+    }));
+    updateMutation.mutate(updates);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-white mb-2">Site Settings</h1>
+        <p className="text-muted-foreground">Manage the content displayed on the public website.</p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Homepage Section */}
+        <div className="glass-card rounded-2xl border border-white/5 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <h2 className="text-xl font-bold text-white">Homepage content</h2>
+            <button
+              onClick={() => handleSave('homepage')}
+              disabled={updateMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-colors font-medium text-sm disabled:opacity-50"
+            >
+              <Save size={16} />
+              Save Changes
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Hero Title</label>
+              <input
+                type="text"
+                value={formData['hero_title'] || ''}
+                onChange={(e) => handleChange('hero_title', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Hero Subtitle</label>
+              <input
+                type="text"
+                value={formData['hero_subtitle'] || ''}
+                onChange={(e) => handleChange('hero_subtitle', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Hero Video URL (Optional)</label>
+              <input
+                type="text"
+                value={formData['hero_video_url'] || ''}
+                onChange={(e) => handleChange('hero_video_url', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none placeholder:text-muted-foreground/50"
+                placeholder="https://example.com/video.mp4"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">About Snippet (Homepage)</label>
+              <textarea
+                value={formData['about_content'] || ''}
+                onChange={(e) => handleChange('about_content', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none min-h-[100px]"
+              />
+            </div>
+
+            <h3 className="text-sm font-semibold text-white pt-4 border-t border-white/10">Statistics</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Members</label>
+                <input
+                  type="number"
+                  value={formData['stats_members'] || 0}
+                  onChange={(e) => handleChange('stats_members', parseInt(e.target.value))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Events Organized</label>
+                <input
+                  type="number"
+                  value={formData['stats_events'] || 0}
+                  onChange={(e) => handleChange('stats_events', parseInt(e.target.value))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Years of Excellence</label>
+                <input
+                  type="number"
+                  value={formData['stats_years'] || 0}
+                  onChange={(e) => handleChange('stats_years', parseInt(e.target.value))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Alumni Network</label>
+                <input
+                  type="number"
+                  value={formData['stats_alumni'] || 0}
+                  onChange={(e) => handleChange('stats_alumni', parseInt(e.target.value))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* About Page Section */}
+        <div className="glass-card rounded-2xl border border-white/5 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <h2 className="text-xl font-bold text-white">About Page Content</h2>
+            <button
+              onClick={() => handleSave('about')}
+              disabled={updateMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-colors font-medium text-sm disabled:opacity-50"
+            >
+              <Save size={16} />
+              Save Changes
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Vision Statement</label>
+              <textarea
+                value={formData['vision'] || ''}
+                onChange={(e) => handleChange('vision', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none min-h-[100px]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Mission Statement</label>
+              <textarea
+                value={formData['mission'] || ''}
+                onChange={(e) => handleChange('mission', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none min-h-[100px]"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

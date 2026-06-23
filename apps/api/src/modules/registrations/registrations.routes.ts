@@ -30,6 +30,25 @@ router.get('/my', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Admin: Get all registrations
+router.get('/', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const search = (req.query.search as string) || '';
+    
+    const result = await registrationsService.getAllRegistrations(page, limit, search);
+    res.json({ success: true, ...result });
+  } catch (err) { next(err); }
+});
+
+// Admin: Scan QR Code
+router.post('/scan', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
+  try {
+    const result = await registrationsService.scanRegistration(req.body.qrCode, req);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
 // Cancel registration
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {

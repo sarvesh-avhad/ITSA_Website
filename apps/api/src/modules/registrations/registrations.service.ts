@@ -269,6 +269,83 @@ class RegistrationsService {
       data: { attendanceMarked: true, attendanceAt: new Date() },
     });
   }
+
+  async getAllRegistrations(page: number, limit: number, search: string) {
+    const skip = (page - 1) * limit;
+    
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { teamName: { contains: search, mode: 'insensitive' } },
+        { user: { firstName: { contains: search, mode: 'insensitive' } } },
+        { user: { lastName: { contains: search, mode: 'insensitive' } } },
+        { user: { prn: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, data] = await Promise.all([
+      prisma.registration.count({ where }),
+      prisma.registration.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true } },
+          event: { select: { id: true, title: true, slug: true } },
+        },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async scanRegistration(qrCode: string, req: Request) {
+    if (!qrCode) throw new BadRequestError('QR Code is required');
+
+    const registration = await prisma.registration.findFirst({
+      where: { qrCode },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true } },
+        event: { select: { id: true, title: true } },
+      },
+    });
+
+    if (!registration) throw new NotFoundError('Invalid QR Code');
+    
+    if (registration.status !== 'APPROVED') {
+      throw new BadRequestError(`Registration is ${registration.status}. Cannot mark attendance.`);
+    }
+
+    if (registration.attendanceMarked) {
+      throw new ConflictError('Attendance has already been marked for this pass');
+    }
+
+    const updated = await prisma.registration.update({
+      where: { id: registration.id },
+      data: { attendanceMarked: true, attendanceAt: new Date() },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true } },
+        event: { select: { id: true, title: true } },
+      },
+    });
+
+    await createAuditLog(req, {
+      action: 'UPDATE',
+      resource: 'Registration',
+      resourceId: registration.id,
+    });
+
+    return updated;
+  }
 }
 
 export const registrationsService = new RegistrationsService();

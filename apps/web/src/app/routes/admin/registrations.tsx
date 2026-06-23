@@ -5,6 +5,7 @@ import { Search, Loader2, CheckCircle2, XCircle, UserCheck } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { QRScanner } from '@/components/admin/qr-scanner';
 
 const fetchRegistrations = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/admin/registrations?page=${page}&limit=10&search=${search}`);
@@ -15,6 +16,7 @@ export default function AdminRegistrationsPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   // Use a fallback to empty array if the endpoint doesn't exist yet, to prevent app crash during build
   const { data, isLoading, error } = useQuery({
@@ -50,6 +52,25 @@ export default function AdminRegistrationsPage() {
     }
   });
 
+  const scanMutation = useMutation({
+    mutationFn: async (qrCode: string) => {
+      const res = await apiClient.post(`/admin/registrations/scan`, { qrCode });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      setIsScannerOpen(false);
+      toast.success(`Scanned successfully! Marked ${data.data.user?.firstName || 'Participant'} as attended.`);
+      queryClient.invalidateQueries({ queryKey: ['admin-registrations'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Invalid or already scanned QR code');
+    }
+  });
+
+  const handleScanSuccess = (decodedText: string) => {
+    scanMutation.mutate(decodedText);
+  };
+
   const statusColors: Record<string, string> = {
     PENDING: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     APPROVED: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
@@ -63,7 +84,38 @@ export default function AdminRegistrationsPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Registrations</h1>
           <p className="text-muted-foreground">Manage event registrations, approvals, and attendance.</p>
         </div>
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-colors font-medium"
+        >
+          <Search size={18} />
+          Scan QR Code
+        </button>
       </div>
+
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#121212] border border-white/10 rounded-2xl p-6 w-full max-w-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">Scan Event Pass</h2>
+              <button onClick={() => setIsScannerOpen(false)} className="p-2 text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                <XCircle size={20} />
+              </button>
+            </div>
+            {scanMutation.isPending ? (
+              <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+                <p className="text-muted-foreground">Verifying QR code...</p>
+              </div>
+            ) : (
+              <QRScanner onScanSuccess={handleScanSuccess} />
+            )}
+            <p className="text-xs text-center text-muted-foreground mt-4">
+              Point your camera at the participant's QR code to mark their attendance automatically.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
         <div className="p-4 border-b border-white/10 flex items-center justify-between gap-4 bg-white/[0.02]">

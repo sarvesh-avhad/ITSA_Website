@@ -29,6 +29,7 @@ import AdminContactsPage from '@/app/routes/admin/contacts';
 import AdminAnnouncementsPage from '@/app/routes/admin/announcements';
 import AdminSponsorsPage from '@/app/routes/admin/sponsors';
 import AdminCertificatesPage from '@/app/routes/admin/certificates';
+import AdminSettingsPage from '@/app/routes/admin/settings';
 import StudentDashboardPage from '@/app/routes/dashboard/index';
 import StudentCertificatesPage from '@/app/routes/dashboard/certificates';
 import StudentSettingsPage from '@/app/routes/dashboard/settings';
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="announcements" element={<AdminAnnouncementsPage />} />
             <Route path="sponsors" element={<AdminSponsorsPage />} />
             <Route path="certificates" element={<AdminCertificatesPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
             <Route path="*" element={<div className="p-8 text-center text-muted-foreground">This admin module is coming soon.</div>} />
           </Route>
         </Routes>
