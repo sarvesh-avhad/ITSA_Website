@@ -8,8 +8,8 @@ import { toast } from 'sonner';
 import { QRScanner } from '@/components/admin/qr-scanner';
 
 const fetchRegistrations = async (page: number, search: string) => {
-  const { data } = await apiClient.get(`/admin/registrations?page=${page}&limit=10&search=${search}`);
-  return data.data; // Note: Ensure the backend has an /admin/registrations endpoint
+  const { data } = await apiClient.get(`/registrations?page=${page}&limit=10&search=${search}`);
+  return data.data;
 };
 
 export default function AdminRegistrationsPage() {
@@ -26,7 +26,7 @@ export default function AdminRegistrationsPage() {
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
-      const res = await apiClient.patch(`/admin/registrations/${id}/status`, { status });
+      const res = await apiClient.patch(`/registrations/${id}/status`, { status });
       return res.data;
     },
     onSuccess: () => {
@@ -40,7 +40,7 @@ export default function AdminRegistrationsPage() {
 
   const attendanceMutation = useMutation({
     mutationFn: async ({ id, attended }: { id: string, attended: boolean }) => {
-      const res = await apiClient.patch(`/admin/registrations/${id}/attendance`, { attended });
+      const res = await apiClient.post(`/registrations/${id}/attendance`, { attended });
       return res.data;
     },
     onSuccess: () => {
@@ -54,7 +54,7 @@ export default function AdminRegistrationsPage() {
 
   const scanMutation = useMutation({
     mutationFn: async (qrCode: string) => {
-      const res = await apiClient.post(`/admin/registrations/scan`, { qrCode });
+      const res = await apiClient.post(`/registrations/scan`, { qrCode });
       return res.data;
     },
     onSuccess: (data) => {
