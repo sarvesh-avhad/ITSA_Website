@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-
+import { useAuthStore } from '@/stores/auth.store';
 import { PERMISSIONS } from '@itsa/shared';
 
 const fetchUsers = async (page: number, search: string) => {
@@ -22,6 +22,7 @@ export default function AdminUsersPage() {
   const [permissionDrawer, setPermissionDrawer] = useState<{ open: boolean, user: any | null }>({ open: false, user: null });
   const [selectedRole, setSelectedRole] = useState<string>('USER');
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const { user: currentUser } = useAuthStore();
   
   const { data, isLoading } = useQuery({
     queryKey: ['admin-users', page, search],
@@ -239,11 +240,15 @@ export default function AdminUsersPage() {
                     onChange={(e) => setSelectedRole(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-white focus:border-violet-500 outline-none"
                   >
-                    <option value="GUEST">Guest</option>
                     <option value="STUDENT">Student</option>
                     <option value="ITSA_MEMBER">ITSA Member</option>
                     <option value="EVENT_COORDINATOR">Event Coordinator</option>
-                    <option value="ADMIN">Administrator</option>
+                    {currentUser?.role === 'SUPER_ADMIN' && (
+                      <option value="ADMIN">Admin</option>
+                    )}
+                    {currentUser?.role === 'SUPER_ADMIN' && (
+                      <option value="SUPER_ADMIN">Super Admin</option>
+                    )}
                   </select>
                 </div>
               </div>

@@ -60,7 +60,12 @@ export function AdminLayout() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center font-bold text-white text-xs">
                 IT
               </div>
-              <span className="font-bold text-white tracking-tight">Admin Panel</span>
+              <span className="font-bold text-white tracking-tight">
+                {user?.role === 'SUPER_ADMIN' ? 'Super Admin Panel' : 
+                 user?.role === 'ADMIN' ? 'Admin Panel' :
+                 user?.role === 'EVENT_COORDINATOR' ? 'Coordinator Panel' :
+                 user?.role === 'ITSA_MEMBER' ? 'Member Panel' : 'Panel'}
+              </span>
             </Link>
           </div>
 
