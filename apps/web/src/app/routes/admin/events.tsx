@@ -11,8 +11,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
 const fetchAdminEvents = async (page: number, search: string) => {
-  const { data } = await apiClient.get(`/events?page=${page}&limit=10&search=${search}`);
-  return data.data;
+  const { data } = await apiClient.get(`/events/admin?page=${page}&limit=10&search=${search}`);
+  return data;
 };
 
 export default function AdminEventsPage() {
@@ -80,13 +80,20 @@ export default function AdminEventsPage() {
     }
   });
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm({
     resolver: zodResolver(createEventSchema),
     defaultValues: {
       title: '', description: '', shortDescription: '', venue: '', eventType: 'INDIVIDUAL',
-      startDate: new Date().toISOString().slice(0, 16), endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16), maxParticipants: 100,
+      startDate: new Date().toISOString().slice(0, 16), 
+      endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16), 
+      registrationDeadline: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+      maxParticipants: 100,
+      minTeamSize: 2, maxTeamSize: 4, isPublished: true,
     }
   });
+
+  const eventType = watch('eventType');
+  const isPublished = watch('isPublished');
 
   const openEditModal = (event: any) => {
     reset({
@@ -97,7 +104,11 @@ export default function AdminEventsPage() {
       eventType: event.eventType,
       startDate: new Date(event.startDate).toISOString().slice(0, 16),
       endDate: new Date(event.endDate).toISOString().slice(0, 16),
+      registrationDeadline: event.registrationDeadline ? new Date(event.registrationDeadline).toISOString().slice(0, 16) : new Date(event.endDate).toISOString().slice(0, 16),
       maxParticipants: event.maxParticipants || 100,
+      minTeamSize: event.minTeamSize || 2,
+      maxTeamSize: event.maxTeamSize || 4,
+      isPublished: event.isPublished ?? true,
     });
     setModalState({ type: 'EDIT', event });
   };
@@ -107,7 +118,10 @@ export default function AdminEventsPage() {
       ...formData,
       startDate: new Date(formData.startDate).toISOString(),
       endDate: new Date(formData.endDate).toISOString(),
-      maxParticipants: Number(formData.maxParticipants)
+      registrationDeadline: formData.registrationDeadline ? new Date(formData.registrationDeadline).toISOString() : undefined,
+      maxParticipants: Number(formData.maxParticipants),
+      minTeamSize: formData.eventType !== 'INDIVIDUAL' ? Number(formData.minTeamSize) : undefined,
+      maxTeamSize: formData.eventType !== 'INDIVIDUAL' ? Number(formData.maxTeamSize) : undefined,
     };
     if (modalState.type === 'EDIT' && modalState.event) {
       updateMutation.mutate({ id: modalState.event.id, data: payload });
@@ -192,9 +206,14 @@ export default function AdminEventsPage() {
                       {format(new Date(event.startDate), 'MMM d, yyyy')}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border", statusColors[event.status] || statusColors.DRAFT)}>
+                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border mr-2", statusColors[event.status] || statusColors.DRAFT)}>
                         {event.status}
                       </span>
+                      {event.isPublished ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-emerald-500/20 text-emerald-300 border-emerald-500/30">PUBLIC</span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-zinc-500/20 text-zinc-300 border-zinc-500/30">HIDDEN</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -269,6 +288,17 @@ export default function AdminEventsPage() {
 
               <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
                 <div className="space-y-4">
+                  <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
+                    <div>
+                      <h4 className="text-sm font-medium text-white mb-1">Publish Immediately</h4>
+                      <p className="text-xs text-muted-foreground">If enabled, the event will instantly appear on the public website.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" className="sr-only peer" {...register('isPublished')} />
+                      <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
+                    </label>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-white mb-1.5">Event Title</label>
                     <input
@@ -284,7 +314,7 @@ export default function AdminEventsPage() {
                       <label className="block text-sm font-medium text-white mb-1.5">Event Type</label>
                       <select
                         {...register('eventType')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-white focus:border-violet-500 outline-none"
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#121212] border border-white/10 text-white focus:border-violet-500 outline-none"
                       >
                         <option value="INDIVIDUAL">Individual</option>
                         <option value="TEAM">Team</option>
@@ -292,33 +322,65 @@ export default function AdminEventsPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-1.5">Max Participants</label>
+                      <label className="block text-sm font-medium text-white mb-1.5">Total Max Capacity</label>
                       <input
                         type="number"
-                        {...register('maxParticipants')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                        {...register('maxParticipants', { valueAsNumber: true })}
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {(eventType === 'TEAM' || eventType === 'BOTH') && (
+                    <div className="grid grid-cols-2 gap-4 bg-violet-500/10 p-4 rounded-xl border border-violet-500/20">
+                      <div>
+                        <label className="block text-sm font-medium text-violet-200 mb-1.5">Min Team Size</label>
+                        <input
+                          type="number"
+                          {...register('minTeamSize', { valueAsNumber: true })}
+                          className="w-full px-4 py-2.5 rounded-xl bg-[#121212]/50 border border-violet-500/30 text-white focus:border-violet-500 outline-none"
+                        />
+                        {errors.minTeamSize && <p className="text-xs text-red-400 mt-1">{errors.minTeamSize.message as string}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-violet-200 mb-1.5">Max Team Size</label>
+                        <input
+                          type="number"
+                          {...register('maxTeamSize', { valueAsNumber: true })}
+                          className="w-full px-4 py-2.5 rounded-xl bg-[#121212]/50 border border-violet-500/30 text-white focus:border-violet-500 outline-none"
+                        />
+                        {errors.maxTeamSize && <p className="text-xs text-red-400 mt-1">{errors.maxTeamSize.message as string}</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-1.5">Start Date & Time</label>
+                      <label className="block text-sm font-medium text-white mb-1.5">Start Time</label>
                       <input
                         type="datetime-local"
                         {...register('startDate')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none"
                       />
                       {errors.startDate && <p className="text-xs text-red-400 mt-1">{errors.startDate.message as string}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-white mb-1.5">End Date & Time</label>
+                      <label className="block text-sm font-medium text-white mb-1.5">End Time</label>
                       <input
                         type="datetime-local"
                         {...register('endDate')}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none"
                       />
                       {errors.endDate && <p className="text-xs text-red-400 mt-1">{errors.endDate.message as string}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-violet-200 mb-1.5">Reg. Deadline</label>
+                      <input
+                        type="datetime-local"
+                        {...register('registrationDeadline')}
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#121212]/50 border border-violet-500/30 text-white focus:border-violet-500 outline-none"
+                      />
+                      {errors.registrationDeadline && <p className="text-xs text-red-400 mt-1">{errors.registrationDeadline.message as string}</p>}
                     </div>
                   </div>
 

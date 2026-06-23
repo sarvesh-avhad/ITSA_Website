@@ -9,7 +9,7 @@ import { QRScanner } from '@/components/admin/qr-scanner';
 
 const fetchRegistrations = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/registrations?page=${page}&limit=10&search=${search}`);
-  return data.data;
+  return data;
 };
 
 export default function AdminRegistrationsPage() {
@@ -17,6 +17,7 @@ export default function AdminRegistrationsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [selectedReg, setSelectedReg] = useState<any>(null);
   
   // Use a fallback to empty array if the endpoint doesn't exist yet, to prevent app crash during build
   const { data, isLoading, error } = useQuery({
@@ -161,9 +162,11 @@ export default function AdminRegistrationsPage() {
               ) : (
                 data?.data?.map((reg: any) => (
                   <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-white">{reg.teamName || reg.user?.name || 'Unknown'}</div>
-                      <div className="text-xs text-muted-foreground">{reg.teamName ? 'Team Registration' : (reg.user?.prn || reg.user?.email)}</div>
+                    <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedReg(reg)}>
+                      <div className="font-medium text-white hover:text-violet-400 transition-colors">
+                        {reg.team?.name || `${reg.user?.firstName} ${reg.user?.lastName}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{reg.team ? 'Team Registration' : (reg.user?.prn || reg.user?.email)}</div>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
                       {reg.event?.title || 'Unknown Event'}
@@ -237,6 +240,99 @@ export default function AdminRegistrationsPage() {
           </div>
         )}
       </div>
+
+      {/* Registration Details Modal */}
+      {selectedReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#121212] border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Registration Details</h2>
+                <p className="text-muted-foreground">{selectedReg.event?.title}</p>
+              </div>
+              <button onClick={() => setSelectedReg(null)} className="p-2 text-muted-foreground hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center justify-between bg-white/[0.02] p-4 rounded-xl border border-white/5">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Status</div>
+                  <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest border", statusColors[selectedReg.status] || statusColors.PENDING)}>
+                    {selectedReg.status}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Attendance</div>
+                  <span className={cn("px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest border", selectedReg.attendanceMarked ? "bg-violet-500/20 text-violet-300 border-violet-500/30" : "bg-white/10 text-white/50 border-white/20")}>
+                    {selectedReg.attendanceMarked ? 'ATTENDED' : 'PENDING'}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Registered On</div>
+                  <div className="text-white font-medium">{format(new Date(selectedReg.createdAt), 'MMM d, yyyy')}</div>
+                </div>
+              </div>
+
+              {selectedReg.team ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    Team: {selectedReg.team.name}
+                  </h3>
+                  
+                  {/* Leader */}
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold text-white">Team Leader</h4>
+                      <span className="text-[10px] uppercase tracking-wider bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full font-bold">LEADER</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-y-2 text-sm">
+                      <div className="text-muted-foreground">Name: <span className="text-white ml-1">{selectedReg.team.leader.firstName} {selectedReg.team.leader.lastName}</span></div>
+                      <div className="text-muted-foreground">Email: <span className="text-white ml-1">{selectedReg.team.leader.email}</span></div>
+                      <div className="text-muted-foreground">PRN: <span className="text-white ml-1">{selectedReg.team.leader.prn || 'N/A'}</span></div>
+                      <div className="text-muted-foreground">Phone: <span className="text-white ml-1">{selectedReg.team.leader.phone || 'N/A'}</span></div>
+                      <div className="text-muted-foreground">Branch: <span className="text-white ml-1">{selectedReg.team.leader.branch || 'N/A'}</span></div>
+                      <div className="text-muted-foreground">Year: <span className="text-white ml-1">{selectedReg.team.leader.year || 'N/A'}</span></div>
+                    </div>
+                  </div>
+
+                  {/* Members */}
+                  {selectedReg.team.members.map((member: any, idx: number) => (
+                    <div key={member.id} className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
+                      <h4 className="font-semibold text-white mb-2">Member {idx + 1}</h4>
+                      <div className="grid grid-cols-2 gap-y-2 text-sm">
+                        <div className="text-muted-foreground">Name: <span className="text-white ml-1">{member.user.firstName} {member.user.lastName}</span></div>
+                        <div className="text-muted-foreground">Email: <span className="text-white ml-1">{member.user.email}</span></div>
+                        <div className="text-muted-foreground">PRN: <span className="text-white ml-1">{member.user.prn || 'N/A'}</span></div>
+                        <div className="text-muted-foreground">Phone: <span className="text-white ml-1">{member.user.phone || 'N/A'}</span></div>
+                        <div className="text-muted-foreground">Branch: <span className="text-white ml-1">{member.user.branch || 'N/A'}</span></div>
+                        <div className="text-muted-foreground">Year: <span className="text-white ml-1">{member.user.year || 'N/A'}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    Participant Details
+                  </h3>
+                  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <div className="grid grid-cols-2 gap-y-3 text-sm">
+                      <div className="text-muted-foreground">Name: <span className="text-white ml-1">{selectedReg.user.firstName} {selectedReg.user.lastName}</span></div>
+                      <div className="text-muted-foreground">Email: <span className="text-white ml-1">{selectedReg.user.email}</span></div>
+                      <div className="text-muted-foreground">PRN: <span className="text-white ml-1">{selectedReg.user.prn || 'N/A'}</span></div>
+                      <div className="text-muted-foreground">Phone: <span className="text-white ml-1">{selectedReg.user.phone || 'N/A'}</span></div>
+                      <div className="text-muted-foreground">Branch: <span className="text-white ml-1">{selectedReg.user.branch || 'N/A'}</span></div>
+                      <div className="text-muted-foreground">Year: <span className="text-white ml-1">{selectedReg.user.year || 'N/A'}</span></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

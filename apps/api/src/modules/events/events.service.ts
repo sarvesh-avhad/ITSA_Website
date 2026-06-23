@@ -20,8 +20,11 @@ class EventsService {
 
     const where: any = {
       deletedAt: null,
-      isPublished: true,
     };
+
+    if (!(filters as any).isAdmin) {
+      where.isPublished = true;
+    }
 
     if (filters.status) where.status = filters.status;
     if (filters.categoryId) where.categoryId = filters.categoryId;
@@ -42,8 +45,8 @@ class EventsService {
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,
-        skip,
-        take: limit,
+        skip: Number(skip),
+        take: Number(limit),
         orderBy: { startDate: 'desc' },
         select: {
           id: true,

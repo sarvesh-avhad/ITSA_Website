@@ -291,8 +291,18 @@ class RegistrationsService {
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true } },
+          user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
           event: { select: { id: true, title: true, slug: true } },
+          team: {
+            include: {
+              leader: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
+              members: {
+                include: {
+                  user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } }
+                }
+              }
+            }
+          }
         },
       }),
     ]);

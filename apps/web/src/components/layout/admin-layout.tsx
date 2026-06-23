@@ -21,9 +21,13 @@ const adminLinks = [
 ];
 
 export function AdminLayout() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, isLoading } = useAuthStore();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  }
 
   if (!isAuthenticated || !user || !['ADMIN', 'COORDINATOR'].includes(user.role)) {
     return <Navigate to="/auth/login" replace />;
