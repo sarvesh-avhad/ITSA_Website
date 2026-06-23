@@ -4,7 +4,7 @@ import { env } from '@/config/env';
 import { UnauthorizedError, ForbiddenError } from '@/lib/errors';
 import { prisma } from '@/lib/prisma';
 import type { JwtPayload, UserRole } from '@itsa/shared';
-import { hasMinimumRole } from '@itsa/shared';
+import { hasMinimumRole, ROLE_BASE_PERMISSIONS } from '@itsa/shared';
 
 // Extend Express Request
 declare global {
@@ -98,7 +98,10 @@ export function requirePermission(permission: string) {
       return next();
     }
 
-    if (!req.user.permissions || !req.user.permissions.includes(permission)) {
+    const basePermissions = ROLE_BASE_PERMISSIONS[req.user.role as UserRole] || [];
+    const userPermissions = req.user.permissions || [];
+
+    if (!basePermissions.includes(permission) && !userPermissions.includes(permission)) {
       return next(new ForbiddenError(`Requires permission: ${permission}`));
     }
 

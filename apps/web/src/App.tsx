@@ -30,6 +30,7 @@ import AdminAnnouncementsPage from '@/app/routes/admin/announcements';
 import AdminSponsorsPage from '@/app/routes/admin/sponsors';
 import AdminCertificatesPage from '@/app/routes/admin/certificates';
 import AdminSettingsPage from '@/app/routes/admin/settings';
+import AdminMyPermissionsPage from '@/app/routes/admin/my-permissions';
 import StudentDashboardPage from '@/app/routes/dashboard/index';
 import StudentCertificatesPage from '@/app/routes/dashboard/certificates';
 import StudentSettingsPage from '@/app/routes/dashboard/settings';
@@ -114,6 +115,7 @@ export default function App() {
           {/* Admin routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />
+            <Route path="my-permissions" element={<AdminMyPermissionsPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="events" element={<AdminEventsPage />} />
             <Route path="registrations" element={<AdminRegistrationsPage />} />

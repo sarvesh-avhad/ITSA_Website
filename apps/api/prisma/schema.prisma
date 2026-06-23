@@ -16,9 +16,10 @@ datasource db {
 // ============================================================
 
 enum UserRole {
-  VISITOR
+  GUEST
   STUDENT
-  COORDINATOR
+  ITSA_MEMBER
+  EVENT_COORDINATOR
   ADMIN
   SUPER_ADMIN
 }
@@ -103,7 +104,7 @@ model User {
   year            Int?
   avatarUrl       String?
   googleId        String?   @unique
-  role            UserRole  @default(VISITOR)
+  role            UserRole  @default(GUEST)
   permissions     String[]  @default([])
   isActive        Boolean   @default(true)
   isEmailVerified Boolean   @default(false)
@@ -120,6 +121,7 @@ model User {
 
   certificates  Certificate[]
   contacts      Contact[]
+  assignedEvents Event[] @relation("EventCoordinators")
 
   @@index([email])
   @@index([prn])
@@ -164,6 +166,7 @@ model Event {
   albums        GalleryAlbum[]
   certificates  Certificate[]
   sponsors      SponsorEvent[]
+  coordinators  User[]          @relation("EventCoordinators")
 
   @@index([slug])
   @@index([status])

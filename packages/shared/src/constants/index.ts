@@ -5,14 +5,15 @@ import type { UserRole } from '../types/auth.types';
 // ============================================================
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  VISITOR: 0,
+  GUEST: 0,
   STUDENT: 1,
-  COORDINATOR: 2,
-  ADMIN: 3,
-  SUPER_ADMIN: 4,
+  ITSA_MEMBER: 2,
+  EVENT_COORDINATOR: 3,
+  ADMIN: 4,
+  SUPER_ADMIN: 5,
 } as const;
 
-export const ALL_ROLES: UserRole[] = ['VISITOR', 'STUDENT', 'COORDINATOR', 'ADMIN', 'SUPER_ADMIN'];
+export const ALL_ROLES: UserRole[] = ['GUEST', 'STUDENT', 'ITSA_MEMBER', 'EVENT_COORDINATOR', 'ADMIN', 'SUPER_ADMIN'];
 
 export function hasMinimumRole(userRole: UserRole, requiredRole: UserRole): boolean {
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
@@ -58,11 +59,40 @@ export const PERMISSIONS = {
   // CMS
   CMS_UPDATE: 'cms:update',
 
+  // Settings
+  SETTINGS_MANAGE: 'settings:manage',
+  AUDIT_LOGS_READ: 'audit_logs:read',
+
   // Admin
   ADMIN_DASHBOARD: 'admin:dashboard',
   ADMIN_EXPORT: 'admin:export',
   ADMIN_AUDIT_LOGS: 'admin:audit_logs',
 } as const;
+
+// Values from the PERMISSIONS object
+const P = PERMISSIONS;
+
+export const ROLE_BASE_PERMISSIONS: Record<UserRole, string[]> = {
+  GUEST: [],
+  STUDENT: [],
+  ITSA_MEMBER: [
+    P.GALLERY_UPLOAD,
+  ],
+  EVENT_COORDINATOR: [
+    P.EVENTS_MANAGE_REGISTRATIONS,
+    P.CERTIFICATES_GENERATE,
+  ],
+  ADMIN: [
+    P.EVENTS_CREATE, P.EVENTS_UPDATE, P.EVENTS_DELETE, P.EVENTS_MANAGE_REGISTRATIONS,
+    P.GALLERY_CREATE, P.GALLERY_UPDATE, P.GALLERY_DELETE, P.GALLERY_UPLOAD,
+    P.SPONSORS_CREATE, P.SPONSORS_UPDATE, P.SPONSORS_DELETE,
+    P.ANNOUNCEMENTS_CREATE, P.ANNOUNCEMENTS_UPDATE, P.ANNOUNCEMENTS_DELETE,
+    P.CERTIFICATES_GENERATE, P.CERTIFICATES_MANAGE,
+    P.USERS_READ, P.USERS_MANAGE_ROLES,
+    P.CMS_UPDATE,
+  ],
+  SUPER_ADMIN: Object.values(PERMISSIONS),
+};
 
 // ============================================================
 // Application Constants

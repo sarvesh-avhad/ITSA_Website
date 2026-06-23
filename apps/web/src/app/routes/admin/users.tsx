@@ -85,11 +85,16 @@ export default function AdminUsersPage() {
     setPermissionDrawer({ open: true, user });
   };
 
-  const roleColors: Record<string, string> = {
-    USER: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/30',
-    MEMBER: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    COORDINATOR: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    ADMIN: 'bg-red-500/20 text-red-300 border-red-500/30',
+  const getRoleBadge = (role: string) => {
+    const styles = {
+      SUPER_ADMIN: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+      ADMIN: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
+      EVENT_COORDINATOR: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+      ITSA_MEMBER: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      STUDENT: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      GUEST: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
+    } as Record<string, string>;
+    return styles[role] || styles.GUEST;
   };
 
   return (
@@ -155,8 +160,8 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{user.email}</td>
                     <td className="px-6 py-4">
-                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border", roleColors[user.role] || roleColors.USER)}>
-                        {user.role}
+                      <span className={cn("px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border", getRoleBadge(user.role))}>
+                        {user.role.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">
@@ -234,9 +239,10 @@ export default function AdminUsersPage() {
                     onChange={(e) => setSelectedRole(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-white focus:border-violet-500 outline-none"
                   >
-                    <option value="USER">User (Standard)</option>
-                    <option value="MEMBER">ITSA Member</option>
-                    <option value="COORDINATOR">Event Coordinator</option>
+                    <option value="GUEST">Guest</option>
+                    <option value="STUDENT">Student</option>
+                    <option value="ITSA_MEMBER">ITSA Member</option>
+                    <option value="EVENT_COORDINATOR">Event Coordinator</option>
                     <option value="ADMIN">Administrator</option>
                   </select>
                 </div>

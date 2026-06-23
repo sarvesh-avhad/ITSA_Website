@@ -31,7 +31,7 @@ router.get('/my', authenticate, async (req, res, next) => {
 });
 
 // Admin: Get all registrations
-router.get('/', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
+router.get('/', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -43,7 +43,7 @@ router.get('/', authenticate, requireRole('COORDINATOR'), async (req, res, next)
 });
 
 // Admin: Scan QR Code
-router.post('/scan', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
+router.post('/scan', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
   try {
     const result = await registrationsService.scanRegistration(req.body.qrCode, req);
     res.json({ success: true, data: result });
@@ -58,7 +58,7 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 });
 
 // Admin: Update status
-router.patch('/:id/status', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
+router.patch('/:id/status', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
   try {
     const result = await registrationsService.updateStatus((req.params.id as string) as string, req.body.status, req);
     res.json({ success: true, data: result });
@@ -66,7 +66,7 @@ router.patch('/:id/status', authenticate, requireRole('COORDINATOR'), async (req
 });
 
 // Coordinator: Mark attendance
-router.post('/:id/attendance', authenticate, requireRole('COORDINATOR'), async (req, res, next) => {
+router.post('/:id/attendance', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
   try {
     const result = await registrationsService.markAttendance((req.params.id as string) as string, req);
     res.json({ success: true, data: result });

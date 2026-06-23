@@ -31,7 +31,7 @@ router.post('/', validate(contactSchema), async (req, res, next) => {
 });
 
 // Admin: List messages
-router.get('/', authenticate, requireRole('COORDINATOR'), validateQuery(paginationSchema), async (req, res, next) => {
+router.get('/', authenticate, requireRole('EVENT_COORDINATOR'), validateQuery(paginationSchema), async (req, res, next) => {
   try {
     const { page = 1, limit = 12, status } = req.query as any;
     const skip = (Number(page) - 1) * Number(limit);
@@ -60,7 +60,7 @@ router.get('/', authenticate, requireRole('COORDINATOR'), validateQuery(paginati
 // Admin: Update status
 const statusSchema = z.object({ status: z.enum(['NEW', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']) });
 
-router.patch('/:id/status', authenticate, requireRole('COORDINATOR'), validate(statusSchema), async (req, res, next) => {
+router.patch('/:id/status', authenticate, requireRole('EVENT_COORDINATOR'), validate(statusSchema), async (req, res, next) => {
   try {
     const { status } = req.body;
     const message = await prisma.contact.update({

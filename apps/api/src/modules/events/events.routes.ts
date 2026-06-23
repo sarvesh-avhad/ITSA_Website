@@ -36,7 +36,7 @@ router.delete('/:id', authenticate, requireRole('ADMIN'), (req, res, next) => {
   eventsController.delete(req, res).catch(next);
 });
 
-router.get('/:id/registrations', authenticate, requireRole('COORDINATOR'), (req, res, next) => {
+router.get('/:id/registrations', authenticate, requireRole('EVENT_COORDINATOR'), (req, res, next) => {
   eventsController.getRegistrations(req, res).catch(next);
 });
 

@@ -49,7 +49,7 @@ router.get('/:slug', async (req, res, next) => {
 });
 
 // Create
-router.post('/', authenticate, requireRole('COORDINATOR'), validate(createAnnouncementSchema), async (req, res, next) => {
+router.post('/', authenticate, requireRole('EVENT_COORDINATOR'), validate(createAnnouncementSchema), async (req, res, next) => {
   try {
     const slug = slugify(req.body.title, { lower: true, strict: true }) + '-' + Date.now();
     const announcement = await prisma.announcement.create({
@@ -66,7 +66,7 @@ router.post('/', authenticate, requireRole('COORDINATOR'), validate(createAnnoun
 });
 
 // Update
-router.patch('/:id', authenticate, requireRole('COORDINATOR'), validate(updateAnnouncementSchema), async (req, res, next) => {
+router.patch('/:id', authenticate, requireRole('EVENT_COORDINATOR'), validate(updateAnnouncementSchema), async (req, res, next) => {
   try {
     const existing = await prisma.announcement.findUnique({ where: { id: (req.params.id as string) } });
     if (!existing) throw new NotFoundError('Announcement');

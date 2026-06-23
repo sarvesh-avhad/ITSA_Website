@@ -118,13 +118,13 @@ export function MainLayout() {
 
             {isAuthenticated && user ? (
               <div className="hidden sm:flex items-center gap-2">
-                {(user.role === 'ADMIN' || user.role === 'COORDINATOR') && (
+                {['ADMIN', 'EVENT_COORDINATOR', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role) && (
                   <Link
                     to="/admin"
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-all duration-300"
                   >
                     <Shield size={16} />
-                    Admin
+                    {user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Admin'}
                   </Link>
                 )}
                 <Link
@@ -190,13 +190,13 @@ export function MainLayout() {
                 <div className="pt-4 mt-2 border-t border-white/10 space-y-2">
                   {isAuthenticated && user ? (
                     <>
-                      {(user.role === 'ADMIN' || user.role === 'COORDINATOR') && (
+                      {['ADMIN', 'EVENT_COORDINATOR', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role) && (
                         <Link
                           to="/admin"
                           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white hover:bg-white/5 transition-colors"
                         >
                           <Shield size={18} className="text-violet-400" />
-                          Admin Dashboard
+                          {user.role === 'SUPER_ADMIN' ? 'Super Admin Dashboard' : 'Admin Dashboard'}
                         </Link>
                       )}
                       <Link

@@ -60,24 +60,45 @@ router.get('/', authenticate, requireRole('ADMIN'), async (req, res, next) => {
 });
 
 // PATCH update user role
-router.patch('/:id/role', authenticate, requireRole('SUPER_ADMIN'), async (req, res, next) => {
+router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
     const { role } = req.body;
+    const currentAdminRole = req.user!.role;
     
     // Check if user exists
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) throw new NotFoundError('User');
 
+    // Rule 1: SUPER_ADMIN cannot be modified by anyone except themselves
+    if (user.role === 'SUPER_ADMIN' && req.user!.userId !== user.id) {
+      return res.status(403).json({ success: false, error: { message: 'Cannot modify Super Admin accounts' } });
+    }
+
+    // Rule 2: ADMIN restrictions
+    if (currentAdminRole === 'ADMIN') {
+      if (user.role === 'ADMIN' && req.user!.userId !== user.id) {
+        return res.status(403).json({ success: false, error: { message: 'Cannot modify other Admin accounts' } });
+      }
+      if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+        return res.status(403).json({ success: false, error: { message: 'Cannot promote to Admin or Super Admin' } });
+      }
+    }
+
+    // Clear specific permissions array on any role change to guarantee instant revocation
     const updatedUser = await prisma.user.update({
       where: { id: req.params.id },
-      data: { role },
-      select: { id: true, email: true, role: true },
+      data: { 
+        role,
+        ...(user.role !== role ? { permissions: [] } : {})
+      },
+      select: { id: true, email: true, role: true, permissions: true },
     });
 
     await createAuditLog(req, {
       action: 'UPDATE',
       resource: 'User',
       resourceId: updatedUser.id,
+      oldData: { role: user.role },
       newData: { role },
     });
 
@@ -86,12 +107,17 @@ router.patch('/:id/role', authenticate, requireRole('SUPER_ADMIN'), async (req, 
 });
 
 // PATCH update user permissions
-router.patch('/:id/permissions', authenticate, requireRole('SUPER_ADMIN'), async (req, res, next) => {
+router.patch('/:id/permissions', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
     const { permissions } = req.body; // Expecting array of strings
+    const currentAdminRole = req.user!.role;
     
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) throw new NotFoundError('User');
+
+    if (currentAdminRole === 'ADMIN' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN')) {
+      return res.status(403).json({ success: false, error: { message: 'Cannot modify Admin or Super Admin permissions' } });
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: req.params.id },

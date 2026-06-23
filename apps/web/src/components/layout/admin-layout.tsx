@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Calendar, Image as ImageIcon, FileText, Settings, Award, LogOut, Menu, X, Home, Mail, Megaphone, Star } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Image as ImageIcon, FileText, Settings, Award, LogOut, Menu, X, Home, Mail, Megaphone, Star, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
+import { PERMISSIONS } from '@itsa/shared';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
@@ -9,15 +10,17 @@ import { SEO } from '@/components/seo';
 
 const adminLinks = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { label: 'Users', href: '/admin/users', icon: Users },
-  { label: 'Events', href: '/admin/events', icon: Calendar },
-  { label: 'Registrations', href: '/admin/registrations', icon: FileText },
-  { label: 'Gallery', href: '/admin/gallery', icon: ImageIcon },
-  { label: 'Announcements', href: '/admin/announcements', icon: Megaphone },
-  { label: 'Sponsors', href: '/admin/sponsors', icon: Star },
-  { label: 'Contacts', href: '/admin/contacts', icon: Mail },
-  { label: 'Certificates', href: '/admin/certificates', icon: Award },
-  { label: 'Settings', href: '/admin/settings', icon: Settings },
+  { label: 'My Permissions', href: '/admin/my-permissions', icon: ShieldCheck },
+  { label: 'Users', href: '/admin/users', icon: Users, permission: PERMISSIONS.USERS_READ },
+  { label: 'Events', href: '/admin/events', icon: Calendar, permission: [PERMISSIONS.EVENTS_CREATE, PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS] },
+  { label: 'Registrations', href: '/admin/registrations', icon: FileText, permission: PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS },
+  { label: 'Gallery', href: '/admin/gallery', icon: ImageIcon, permission: [PERMISSIONS.GALLERY_CREATE, PERMISSIONS.GALLERY_UPLOAD] },
+  { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, permission: PERMISSIONS.ANNOUNCEMENTS_CREATE },
+  { label: 'Sponsors', href: '/admin/sponsors', icon: Star, permission: PERMISSIONS.SPONSORS_CREATE },
+  { label: 'Contacts', href: '/admin/contacts', icon: Mail, permission: PERMISSIONS.CMS_UPDATE },
+  { label: 'Certificates', href: '/admin/certificates', icon: Award, permission: PERMISSIONS.CERTIFICATES_GENERATE },
+  { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText, permission: PERMISSIONS.AUDIT_LOGS_READ },
+  { label: 'Settings', href: '/admin/settings', icon: Settings, permission: PERMISSIONS.SETTINGS_MANAGE },
 ];
 
 export function AdminLayout() {
@@ -29,7 +32,7 @@ export function AdminLayout() {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div></div>;
   }
 
-  if (!isAuthenticated || !user || !['ADMIN', 'COORDINATOR'].includes(user.role)) {
+  if (!isAuthenticated || !user || !['ADMIN', 'EVENT_COORDINATOR', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role)) {
     return <Navigate to="/auth/login" replace />;
   }
 
@@ -63,7 +66,13 @@ export function AdminLayout() {
 
           {/* Navigation */}
           <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
-            {adminLinks.map((link) => {
+            {adminLinks.filter(link => {
+              if (!link.permission) return true;
+              if (Array.isArray(link.permission)) {
+                return link.permission.some(p => useAuthStore.getState().hasPermission(p));
+              }
+              return useAuthStore.getState().hasPermission(link.permission);
+            }).map((link) => {
               const isActive = location.pathname === link.href || (link.href !== '/admin' && location.pathname.startsWith(link.href));
               const Icon = link.icon;
               return (
@@ -95,12 +104,14 @@ export function AdminLayout() {
           {/* User Profile & Logout */}
           <div className="p-4 border-t border-white/10">
             <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10 mb-2">
-              <div className="w-8 h-8 rounded-full bg-violet-600/30 flex items-center justify-center text-violet-400 font-bold shrink-0">
-                {((user as any).name || 'A').charAt(0)}
+              <div className="w-8 h-8 rounded-full bg-violet-600/30 flex items-center justify-center text-violet-400 font-bold shrink-0 uppercase">
+                {((user as any).firstName || 'U').charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{(user as any).name || 'Admin'}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.role}</p>
+                <div className="text-sm font-medium text-white truncate">{((user as any).firstName || '')} {((user as any).lastName || '')}</div>
+                <div className="text-[10px] text-violet-400 font-bold tracking-wider truncate">
+                  {user.role.replace('_', ' ')}
+                </div>
               </div>
             </div>
             <Link

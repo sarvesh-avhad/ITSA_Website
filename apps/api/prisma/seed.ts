@@ -38,7 +38,7 @@ async function main() {
         passwordHash: studentPassword,
         firstName: 'Priya',
         lastName: 'Sharma',
-        role: UserRole.COORDINATOR,
+        role: UserRole.EVENT_COORDINATOR,
         prn: '2023IT001',
         branch: 'Information Technology',
         year: 3,

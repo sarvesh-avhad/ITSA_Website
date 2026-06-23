@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { AuthUser } from '@itsa/shared';
+import type { AuthUser, UserRole } from '@itsa/shared';
+import { ROLE_BASE_PERMISSIONS } from '@itsa/shared';
 
 interface AuthState {
   user: AuthUser | null;
@@ -41,6 +42,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const user = get().user;
     if (!user) return false;
     if (user.role === 'SUPER_ADMIN') return true;
-    return user.permissions?.includes(permission) ?? false;
+    
+    const basePermissions = ROLE_BASE_PERMISSIONS[user.role as UserRole] || [];
+    const userPermissions = user.permissions || [];
+    
+    return basePermissions.includes(permission) || userPermissions.includes(permission);
   },
 }));

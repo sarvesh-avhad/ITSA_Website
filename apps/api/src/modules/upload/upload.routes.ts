@@ -6,7 +6,7 @@ import { createAuditLog } from '@/middleware/audit.middleware';
 const router = Router();
 
 // Upload a single file
-router.post('/', authenticate, requireRole('COORDINATOR'), upload.single('file'), async (req, res, next) => {
+router.post('/', authenticate, requireRole('EVENT_COORDINATOR'), upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
@@ -34,7 +34,7 @@ router.post('/', authenticate, requireRole('COORDINATOR'), upload.single('file')
 });
 
 // Upload multiple files
-router.post('/batch', authenticate, requireRole('COORDINATOR'), upload.array('files', 10), async (req, res, next) => {
+router.post('/batch', authenticate, requireRole('EVENT_COORDINATOR'), upload.array('files', 10), async (req, res, next) => {
   try {
     if (!req.files || (req.files as any[]).length === 0) {
       return res.status(400).json({ success: false, error: { message: 'No files uploaded' } });
