@@ -106,7 +106,7 @@ class RegistrationsService {
       throw new BadRequestError('Registration deadline has passed');
     }
 
-    const totalSize = data.memberEmails.length + 1; // +1 for leader
+    const totalSize = data.members.length + 1; // +1 for leader
     if (event.maxTeamSize && totalSize > event.maxTeamSize) {
       throw new BadRequestError(`Team size cannot exceed ${event.maxTeamSize} members`);
     }
@@ -114,23 +114,51 @@ class RegistrationsService {
       throw new BadRequestError(`Team must have at least ${event.minTeamSize} members`);
     }
 
-    // Verify all member emails exist
-    const members = await prisma.user.findMany({
-      where: { email: { in: data.memberEmails }, deletedAt: null },
-    });
-    if (members.length !== data.memberEmails.length) {
-      const found = members.map((m: any) => m.email);
-      const missing = data.memberEmails.filter((e) => !found.includes(e));
-      throw new BadRequestError(`Users not found: ${missing.join(', ')}`);
+    const leader = await prisma.user.findUnique({ where: { id: userId } });
+    if (!leader) throw new NotFoundError('User');
+
+    const memberEmails = data.members.map((m: any) => m.email.toLowerCase());
+    const memberPrns = data.members.map((m: any) => m.prn.toUpperCase());
+
+    if (memberEmails.includes(leader.email.toLowerCase()) || (leader.prn && memberPrns.includes(leader.prn.toUpperCase()))) {
+      throw new BadRequestError('Team leader cannot be added as a team member');
     }
 
-    // Check no team member (including leader) is already registered
-    const allUserIds = [userId, ...members.map((m: any) => m.id)];
+    const allEmails = [leader.email.toLowerCase(), ...memberEmails];
+    const allPrns = [leader.prn?.toUpperCase(), ...memberPrns].filter(Boolean) as string[];
+
+    // 1. Check existing Registrations for this event
     const existingRegs = await prisma.registration.findMany({
-      where: { eventId: data.eventId, userId: { in: allUserIds }, deletedAt: null },
+      where: {
+        eventId: data.eventId,
+        deletedAt: null,
+        user: {
+          OR: [
+            { email: { in: allEmails } },
+            { prn: { in: allPrns } }
+          ]
+        }
+      },
+      include: { user: true }
     });
+
     if (existingRegs.length > 0) {
-      throw new ConflictError('One or more team members are already registered for this event');
+      throw new ConflictError('One or more members are already registered as solo participants or leaders for this event');
+    }
+
+    // 2. Check existing TeamMembers for this event
+    const existingTeamMembers = await prisma.teamMember.findMany({
+      where: {
+        team: { eventId: data.eventId },
+        OR: [
+          { email: { in: allEmails } },
+          { prn: { in: allPrns } }
+        ]
+      }
+    });
+
+    if (existingTeamMembers.length > 0) {
+      throw new ConflictError('One or more members are already part of another team for this event');
     }
 
     const qrId = `ITSA-T-${nanoid(10)}`;
@@ -146,33 +174,44 @@ class RegistrationsService {
       });
 
       // Add team members
+      const teamMembersToCreate = data.members.map((m: any) => ({
+        teamId: team.id,
+        name: m.name,
+        email: m.email.toLowerCase(),
+        phone: m.phone,
+        prn: m.prn.toUpperCase(),
+        branch: m.branch,
+        year: m.year,
+        qrCode: `ITSA-TM-${nanoid(10)}`
+      }));
+
       await tx.teamMember.createMany({
-        data: members.map((m: any) => ({ teamId: team.id, userId: m.id })),
+        data: teamMembersToCreate
       });
 
-      // Create registrations for all members
-      const registrations = await Promise.all(
-        allUserIds.map((uid) =>
-          tx.registration.create({
-            data: {
-              userId: uid,
-              eventId: data.eventId,
-              teamId: team.id,
-              status: 'APPROVED',
-              qrCode: uid === userId ? qrId : `ITSA-T-${nanoid(10)}`,
-              formData: data.formData ? (data.formData as object) : undefined,
-            },
-          })
-        )
-      );
+      // Create Registration only for the team leader
+      const registration = await tx.registration.create({
+        data: {
+          userId,
+          eventId: data.eventId,
+          teamId: team.id,
+          status: 'APPROVED',
+          qrCode: qrId,
+          formData: data.formData ? (data.formData as object) : undefined,
+        },
+        include: {
+          event: { select: { id: true, title: true, startDate: true, venue: true } },
+          user: { select: { id: true, firstName: true, email: true } },
+        }
+      });
 
       // Update event count
       await tx.event.update({
         where: { id: data.eventId },
-        data: { currentCount: { increment: allUserIds.length } },
+        data: { currentCount: { increment: totalSize } },
       });
 
-      return { team, registrations };
+      return { team, registration, qrCodeDataUrl: qrId };
     });
 
     await invalidateCacheByPrefix('events');
@@ -180,7 +219,7 @@ class RegistrationsService {
       action: 'CREATE',
       resource: 'Team Registration',
       resourceId: result.team.id,
-      newData: { teamName: data.teamName, eventId: data.eventId, memberCount: allUserIds.length },
+      newData: { teamName: data.teamName, eventId: data.eventId, memberCount: totalSize },
     });
 
     return result;
@@ -194,7 +233,7 @@ class RegistrationsService {
         team: {
           include: {
             leader: { select: { id: true, firstName: true, lastName: true, email: true } },
-            members: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } } },
+            members: true,
           },
         },
       },

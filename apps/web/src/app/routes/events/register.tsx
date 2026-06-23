@@ -36,12 +36,16 @@ export default function EventRegistrationPage() {
 
   const teamForm = useForm({
     resolver: zodResolver(teamRegistrationSchema),
-    defaultValues: { eventId: '', teamName: '', memberEmails: [''] },
+    defaultValues: { 
+      eventId: '', 
+      teamName: '', 
+      members: [{ name: '', email: '', phone: '', prn: '', branch: '', year: 1 }] 
+    },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: teamForm.control,
-    name: 'memberEmails' as never,
+    name: 'members' as never,
   });
 
   // Set event ID once loaded
@@ -164,30 +168,68 @@ export default function EventRegistrationPage() {
                   </div>
                 </div>
                 
+                {teamForm.formState.errors.members?.root?.message && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
+                    <p className="text-sm text-red-400 flex items-center gap-2">
+                      <AlertTriangle size={16} />
+                      {teamForm.formState.errors.members.root.message}
+                    </p>
+                  </div>
+                )}
+
                 {fields.map((field, index) => (
-                  <div key={field.id} className="flex gap-3">
-                    <div className="flex-1">
-                      <input
-                        {...teamForm.register(`memberEmails.${index}`)}
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-border text-white focus:border-violet-500 outline-none text-sm"
-                        placeholder={`Member ${index + 1} Email (Must be registered user)`}
-                      />
-                      {teamForm.formState.errors.memberEmails?.[index] && (
-                        <p className="text-xs text-red-400 mt-1.5">{teamForm.formState.errors.memberEmails[index]?.message as string}</p>
-                      )}
-                    </div>
+                  <div key={field.id} className="bg-white/5 rounded-xl p-5 border border-white/5 relative">
+                    <h4 className="text-sm font-medium text-white mb-4">Member {index + 1}</h4>
                     {fields.length > 1 && (
-                      <button type="button" onClick={() => remove(index)} className="px-3 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors shrink-0">
-                        Remove
+                      <button type="button" onClick={() => remove(index)} className="absolute top-4 right-4 p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
+                        <X size={16} />
                       </button>
                     )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Full Name</label>
+                        <input {...teamForm.register(`members.${index}.name` as const)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none text-sm" placeholder="John Doe" />
+                        {(teamForm.formState.errors.members as any)?.[index]?.name && <p className="text-xs text-red-400 mt-1">{(teamForm.formState.errors.members as any)[index]?.name?.message as string}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Email</label>
+                        <input {...teamForm.register(`members.${index}.email` as const)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none text-sm" placeholder="john@example.com" />
+                        {(teamForm.formState.errors.members as any)?.[index]?.email && <p className="text-xs text-red-400 mt-1">{(teamForm.formState.errors.members as any)[index]?.email?.message as string}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Phone</label>
+                        <input {...teamForm.register(`members.${index}.phone` as const)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none text-sm" placeholder="9876543210" />
+                        {(teamForm.formState.errors.members as any)?.[index]?.phone && <p className="text-xs text-red-400 mt-1">{(teamForm.formState.errors.members as any)[index]?.phone?.message as string}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">PRN</label>
+                        <input {...teamForm.register(`members.${index}.prn` as const)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none text-sm" placeholder="PRN Number" />
+                        {(teamForm.formState.errors.members as any)?.[index]?.prn && <p className="text-xs text-red-400 mt-1">{(teamForm.formState.errors.members as any)[index]?.prn?.message as string}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Branch</label>
+                        <input {...teamForm.register(`members.${index}.branch` as const)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none text-sm" placeholder="Branch Name" />
+                        {(teamForm.formState.errors.members as any)?.[index]?.branch && <p className="text-xs text-red-400 mt-1">{(teamForm.formState.errors.members as any)[index]?.branch?.message as string}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1">Year</label>
+                        <select {...teamForm.register(`members.${index}.year` as const)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:border-violet-500 outline-none text-sm">
+                          <option value="1" className="bg-zinc-900">1st Year</option>
+                          <option value="2" className="bg-zinc-900">2nd Year</option>
+                          <option value="3" className="bg-zinc-900">3rd Year</option>
+                          <option value="4" className="bg-zinc-900">4th Year</option>
+                          <option value="5" className="bg-zinc-900">5th Year</option>
+                        </select>
+                        {(teamForm.formState.errors.members as any)?.[index]?.year && <p className="text-xs text-red-400 mt-1">{(teamForm.formState.errors.members as any)[index]?.year?.message as string}</p>}
+                      </div>
+                    </div>
                   </div>
                 ))}
 
                 {(!event.maxTeamSize || fields.length + 1 < event.maxTeamSize) && (
                   <button
                     type="button"
-                    onClick={() => append('')}
+                    onClick={() => append({ name: '', email: '', phone: '', prn: '', branch: '', year: 1 } as never)}
                     className="text-sm text-violet-400 hover:text-violet-300 font-medium transition-colors"
                   >
                     + Add Team Member

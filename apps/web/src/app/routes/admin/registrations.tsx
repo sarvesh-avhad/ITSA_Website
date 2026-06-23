@@ -78,6 +78,71 @@ export default function AdminRegistrationsPage() {
     REJECTED: 'bg-red-500/20 text-red-300 border-red-500/30',
   };
 
+  const exportToCsv = (registrations: any[]) => {
+    if (!registrations || registrations.length === 0) return toast.error('No data to export');
+    
+    const headers = ['Type', 'Team Name', 'Participant Name', 'Email', 'Phone', 'PRN', 'Branch', 'Year', 'Event', 'Status', 'Attended'];
+    const rows = [headers.join(',')];
+    
+    registrations.forEach(reg => {
+      if (reg.team) {
+        // Leader
+        rows.push([
+          'Team Leader',
+          `"${reg.team.name}"`,
+          `"${reg.team.leader.firstName} ${reg.team.leader.lastName}"`,
+          reg.team.leader.email,
+          reg.team.leader.phone || '',
+          reg.team.leader.prn || '',
+          reg.team.leader.branch || '',
+          reg.team.leader.year || '',
+          `"${reg.event?.title || ''}"`,
+          reg.status,
+          reg.attendanceMarked ? 'Yes' : 'No'
+        ].join(','));
+        // Members
+        reg.team.members?.forEach((m: any) => {
+          rows.push([
+            'Team Member',
+            `"${reg.team.name}"`,
+            `"${m.name}"`,
+            m.email,
+            m.phone || '',
+            m.prn || '',
+            m.branch || '',
+            m.year || '',
+            `"${reg.event?.title || ''}"`,
+            reg.status,
+            m.attendanceMarked ? 'Yes' : 'No'
+          ].join(','));
+        });
+      } else {
+        // Solo
+        rows.push([
+          'Solo Participant',
+          '""',
+          `"${reg.user?.firstName || ''} ${reg.user?.lastName || ''}"`,
+          reg.user?.email || '',
+          reg.user?.phone || '',
+          reg.user?.prn || '',
+          reg.user?.branch || '',
+          reg.user?.year || '',
+          `"${reg.event?.title || ''}"`,
+          reg.status,
+          reg.attendanceMarked ? 'Yes' : 'No'
+        ].join(','));
+      }
+    });
+
+    const csvData = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const csvUrl = URL.createObjectURL(csvData);
+    const link = document.createElement('a');
+    link.href = csvUrl;
+    link.download = `registrations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(csvUrl);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -85,13 +150,21 @@ export default function AdminRegistrationsPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Registrations</h1>
           <p className="text-muted-foreground">Manage event registrations, approvals, and attendance.</p>
         </div>
-        <button
-          onClick={() => setIsScannerOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-colors font-medium"
-        >
-          <Search size={18} />
-          Scan QR Code
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => exportToCsv(data?.data)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl transition-colors font-medium"
+          >
+            Export CSV
+          </button>
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-colors font-medium"
+          >
+            <Search size={18} />
+            Scan QR Code
+          </button>
+        </div>
       </div>
 
       {isScannerOpen && (
@@ -298,16 +371,21 @@ export default function AdminRegistrationsPage() {
                   </div>
 
                   {/* Members */}
-                  {selectedReg.team.members.map((member: any, idx: number) => (
+                  {selectedReg.team.members?.map((member: any, idx: number) => (
                     <div key={member.id} className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
-                      <h4 className="font-semibold text-white mb-2">Member {idx + 1}</h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-semibold text-white">Member {idx + 1}</h4>
+                        {member.attendanceMarked && (
+                          <span className="text-[10px] uppercase tracking-wider bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full font-bold">ATTENDED</span>
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 gap-y-2 text-sm">
-                        <div className="text-muted-foreground">Name: <span className="text-white ml-1">{member.user.firstName} {member.user.lastName}</span></div>
-                        <div className="text-muted-foreground">Email: <span className="text-white ml-1">{member.user.email}</span></div>
-                        <div className="text-muted-foreground">PRN: <span className="text-white ml-1">{member.user.prn || 'N/A'}</span></div>
-                        <div className="text-muted-foreground">Phone: <span className="text-white ml-1">{member.user.phone || 'N/A'}</span></div>
-                        <div className="text-muted-foreground">Branch: <span className="text-white ml-1">{member.user.branch || 'N/A'}</span></div>
-                        <div className="text-muted-foreground">Year: <span className="text-white ml-1">{member.user.year || 'N/A'}</span></div>
+                        <div className="text-muted-foreground">Name: <span className="text-white ml-1">{member.name}</span></div>
+                        <div className="text-muted-foreground">Email: <span className="text-white ml-1">{member.email}</span></div>
+                        <div className="text-muted-foreground">PRN: <span className="text-white ml-1">{member.prn || 'N/A'}</span></div>
+                        <div className="text-muted-foreground">Phone: <span className="text-white ml-1">{member.phone || 'N/A'}</span></div>
+                        <div className="text-muted-foreground">Branch: <span className="text-white ml-1">{member.branch || 'N/A'}</span></div>
+                        <div className="text-muted-foreground">Year: <span className="text-white ml-1">{member.year || 'N/A'}</span></div>
                       </div>
                     </div>
                   ))}

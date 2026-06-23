@@ -276,15 +276,25 @@ model Team {
 }
 
 model TeamMember {
-  id        String   @id @default(cuid())
-  teamId    String
-  userId    String
-  createdAt DateTime @default(now())
+  id               String    @id @default(cuid())
+  teamId           String
+  userId           String?
+  name             String
+  email            String
+  phone            String?
+  prn              String?
+  branch           String?
+  year             Int?
+  qrCode           String?   @unique
+  attendanceMarked Boolean   @default(false)
+  attendanceAt     DateTime?
+  createdAt        DateTime  @default(now())
 
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team  @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@unique([teamId, userId])
+  @@unique([teamId, email])
+  @@index([qrCode])
   @@map("team_members")
 }
 

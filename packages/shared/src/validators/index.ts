@@ -122,9 +122,23 @@ export const individualRegistrationSchema = z.object({
 export const teamRegistrationSchema = z.object({
   eventId: z.string().cuid(),
   teamName: z.string().min(1, 'Team name is required').max(100),
-  memberEmails: z.array(z.string().email()).min(1, 'At least one team member is required').max(4),
+  members: z.array(z.object({
+    name: z.string().min(2, 'Name is too short').max(100),
+    email: z.string().email('Invalid email'),
+    phone: z.string().regex(/^\d{10}$/, 'Phone must be 10 digits'),
+    prn: z.string().regex(/^[A-Z0-9]+$/, 'Invalid PRN format'),
+    branch: z.string().min(2, 'Branch is required'),
+    year: z.coerce.number().int().min(1).max(5),
+  })).min(1, 'At least one team member is required').max(4),
   formData: z.record(z.unknown()).optional(),
-});
+}).refine(data => {
+  const emails = data.members.map(m => m.email.toLowerCase());
+  return new Set(emails).size === emails.length;
+}, { message: 'Duplicate emails in team members', path: ['members'] })
+.refine(data => {
+  const prns = data.members.map(m => m.prn.toUpperCase());
+  return new Set(prns).size === prns.length;
+}, { message: 'Duplicate PRNs in team members', path: ['members'] });
 
 // ============================================================
 // Gallery Validators
