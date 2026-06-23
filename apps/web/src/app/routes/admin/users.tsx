@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
-import { Search, Loader2, ShieldAlert, X, AlertTriangle, UserCog } from 'lucide-react';
+import { Search, Loader2, ShieldAlert, X, AlertTriangle, UserCog, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
+import { PERMISSIONS } from '@itsa/shared';
+
 const fetchUsers = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/admin/users?page=${page}&limit=10&search=${search}`);
-  return data.data;
+  return data;
 };
 
 export default function AdminUsersPage() {
@@ -17,7 +19,9 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [modalState, setModalState] = useState<{ type: 'ROLE' | 'SUSPEND' | null, user: any | null }>({ type: null, user: null });
+  const [permissionDrawer, setPermissionDrawer] = useState<{ open: boolean, user: any | null }>({ open: false, user: null });
   const [selectedRole, setSelectedRole] = useState<string>('USER');
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   
   const { data, isLoading } = useQuery({
     queryKey: ['admin-users', page, search],
@@ -41,6 +45,21 @@ export default function AdminUsersPage() {
     }
   });
 
+  const permissionsMutation = useMutation({
+    mutationFn: async ({ id, permissions }: { id: string, permissions: string[] }) => {
+      const res = await apiClient.patch(`/admin/users/${id}/permissions`, { permissions });
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('User permissions updated');
+      setPermissionDrawer({ open: false, user: null });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to update permissions');
+    }
+  });
+
   const suspendMutation = useMutation({
     mutationFn: async (id: string) => {
       const res = await apiClient.post(`/admin/users/${id}/suspend`);
@@ -59,6 +78,11 @@ export default function AdminUsersPage() {
   const openRoleModal = (user: any) => {
     setSelectedRole(user.role);
     setModalState({ type: 'ROLE', user });
+  };
+
+  const openPermissionDrawer = (user: any) => {
+    setSelectedPermissions(user.permissions || []);
+    setPermissionDrawer({ open: true, user });
   };
 
   const roleColors: Record<string, string> = {
@@ -124,9 +148,9 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-violet-600/20 text-violet-400 flex items-center justify-center font-bold">
-                          {user.name.charAt(0).toUpperCase()}
+                          {user.firstName?.charAt(0).toUpperCase() || 'U'}
                         </div>
-                        <div className="font-medium text-white">{user.name}</div>
+                        <div className="font-medium text-white">{user.firstName} {user.lastName}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{user.email}</td>
@@ -140,6 +164,9 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openPermissionDrawer(user)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Manage Permissions">
+                          <Key size={16} />
+                        </button>
                         <button onClick={() => openRoleModal(user)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Manage Role">
                           <UserCog size={16} />
                         </button>
@@ -199,7 +226,7 @@ export default function AdminUsersPage() {
               </div>
               <div className="p-6">
                 <p className="text-muted-foreground mb-4">
-                  Update role for <span className="text-white font-medium">{modalState.user.name}</span> ({modalState.user.email}).
+                  Update role for <span className="text-white font-medium">{modalState.user.firstName} {modalState.user.lastName}</span> ({modalState.user.email}).
                 </p>
                 <div className="space-y-4">
                   <select
@@ -231,6 +258,86 @@ export default function AdminUsersPage() {
         )}
       </AnimatePresence>
 
+      {/* Permissions Management Slide-over Drawer */}
+      <AnimatePresence>
+        {permissionDrawer.open && permissionDrawer.user && (
+          <div className="fixed inset-0 z-[100] flex justify-end">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPermissionDrawer({ open: false, user: null })} />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="glass-card w-full max-w-md h-full border-l border-white/10 shadow-2xl relative z-10 flex flex-col bg-background/95"
+            >
+              <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Manage Permissions</h2>
+                  <p className="text-sm text-muted-foreground mt-1">For {permissionDrawer.user.firstName} {permissionDrawer.user.lastName}</p>
+                </div>
+                <button onClick={() => setPermissionDrawer({ open: false, user: null })} className="text-muted-foreground hover:text-white p-2">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {Object.entries(
+                  Object.entries(PERMISSIONS).reduce((acc: any, [key, value]) => {
+                    const category = key.split('_')[0];
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push({ key, value });
+                    return acc;
+                  }, {})
+                ).map(([category, perms]: [string, any]) => (
+                  <div key={category} className="space-y-3">
+                    <h3 className="text-sm font-semibold text-violet-400 uppercase tracking-wider">{category}</h3>
+                    <div className="space-y-2 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                      {perms.map((p: any) => (
+                        <label key={p.key} className="flex items-start gap-3 cursor-pointer group">
+                          <div className="relative flex items-center mt-1">
+                            <input
+                              type="checkbox"
+                              checked={selectedPermissions.includes(p.value)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedPermissions([...selectedPermissions, p.value]);
+                                } else {
+                                  setSelectedPermissions(selectedPermissions.filter(v => v !== p.value));
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-white/20 bg-black/50 text-violet-600 focus:ring-violet-600 focus:ring-offset-background"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-white group-hover:text-violet-200 transition-colors">
+                              {p.key}
+                            </div>
+                            <div className="text-xs text-muted-foreground">{p.value}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-6 border-t border-white/10 bg-white/[0.02] flex justify-end gap-3">
+                <button onClick={() => setPermissionDrawer({ open: false, user: null })} className="px-4 py-2 rounded-xl border border-white/10 text-white hover:bg-white/5 font-medium transition-colors">
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => permissionsMutation.mutate({ id: permissionDrawer.user.id, permissions: selectedPermissions })}
+                  disabled={permissionsMutation.isPending}
+                  className="flex items-center gap-2 px-6 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 disabled:opacity-70 btn-glow"
+                >
+                  {permissionsMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Save Permissions'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Suspend Confirmation Modal */}
       <AnimatePresence>
         {modalState.type === 'SUSPEND' && modalState.user && (
@@ -247,7 +354,7 @@ export default function AdminUsersPage() {
               </div>
               <h2 className="text-xl font-bold text-white mb-2">Suspend User</h2>
               <p className="text-muted-foreground mb-6">
-                Are you sure you want to suspend <span className="font-semibold text-white">{modalState.user.name}</span>? They will lose access to their account immediately.
+                Are you sure you want to suspend <span className="font-semibold text-white">{modalState.user.firstName} {modalState.user.lastName}</span>? They will lose access to their account immediately.
               </p>
               <div className="flex items-center justify-center gap-3">
                 <button

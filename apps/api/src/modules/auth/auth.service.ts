@@ -60,7 +60,7 @@ class AuthService {
     });
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.role, req);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions, req);
 
     // Send welcome email (async, don't await)
     const email = welcomeEmail({ name: user.firstName });
@@ -107,7 +107,7 @@ class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role, req);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions, req);
 
     // Set refresh token cookie
     this.setRefreshTokenCookie(res, tokens.refreshToken);
@@ -180,7 +180,7 @@ class AuthService {
       data: { lastLoginAt: new Date() },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role, req);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions, req);
     this.setRefreshTokenCookie(res, tokens.refreshToken);
 
     return {
@@ -228,7 +228,7 @@ class AuthService {
       data: { isRevoked: true },
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role, req);
+    const tokens = await this.generateTokens(user.id, user.email, user.role, user.permissions, req);
     this.setRefreshTokenCookie(res, tokens.refreshToken);
 
     return tokens;
@@ -330,6 +330,7 @@ class AuthService {
         year: true,
         avatarUrl: true,
         role: true,
+        permissions: true,
         isActive: true,
         isEmailVerified: true,
         lastLoginAt: true,
@@ -364,6 +365,7 @@ class AuthService {
         year: true,
         avatarUrl: true,
         role: true,
+        permissions: true,
         isActive: true,
         isEmailVerified: true,
       },
@@ -380,9 +382,10 @@ class AuthService {
     userId: string,
     email: string,
     role: string,
+    permissions: string[],
     req: Request
   ): Promise<AuthTokens> {
-    const payload: JwtPayload = { userId, email, role: role as any };
+    const payload: JwtPayload = { userId, email, role: role as any, permissions };
 
     const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, {
       expiresIn: env.JWT_ACCESS_EXPIRY as any,
@@ -425,6 +428,7 @@ class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      permissions: user.permissions || [],
       avatarUrl: user.avatarUrl,
       isEmailVerified: user.isEmailVerified,
     };

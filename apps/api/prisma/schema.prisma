@@ -58,11 +58,6 @@ enum SponsorTier {
   ASSOCIATE
 }
 
-enum PostStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
 
 enum AnnouncementCategory {
   NOTICE
@@ -109,6 +104,7 @@ model User {
   avatarUrl       String?
   googleId        String?   @unique
   role            UserRole  @default(VISITOR)
+  permissions     String[]  @default([])
   isActive        Boolean   @default(true)
   isEmailVerified Boolean   @default(false)
   lastLoginAt     DateTime?
@@ -121,7 +117,7 @@ model User {
   teamMembers   TeamMember[]
   refreshTokens RefreshToken[]
   auditLogs     AuditLog[]
-  blogPosts     BlogPost[]
+
   certificates  Certificate[]
   contacts      Contact[]
 
@@ -132,45 +128,6 @@ model User {
   @@map("users")
 }
 
-model Role {
-  id          String           @id @default(cuid())
-  name        UserRole         @unique
-  description String?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  permissions RolePermission[]
-
-  @@map("roles")
-}
-
-model Permission {
-  id          String           @id @default(cuid())
-  name        String           @unique
-  description String?
-  resource    String
-  action      String
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  roles RolePermission[]
-
-  @@unique([resource, action])
-  @@map("permissions")
-}
-
-model RolePermission {
-  id           String   @id @default(cuid())
-  roleId       String
-  permissionId String
-  createdAt    DateTime @default(now())
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@unique([roleId, permissionId])
-  @@map("role_permissions")
-}
 
 model Event {
   id                   String      @id @default(cuid())
@@ -405,49 +362,6 @@ model Announcement {
   @@map("announcements")
 }
 
-model BlogPost {
-  id          String     @id @default(cuid())
-  title       String
-  slug        String     @unique
-  content     String     @db.Text
-  excerpt     String?    @db.VarChar(500)
-  coverUrl    String?
-  status      PostStatus @default(DRAFT)
-  isFeatured  Boolean    @default(false)
-  publishedAt DateTime?
-  authorId    String
-  categoryId  String?
-  metaTitle   String?
-  metaDesc    String?    @db.VarChar(160)
-  readTime    Int?
-  viewCount   Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  deletedAt   DateTime?
-
-  author   User          @relation(fields: [authorId], references: [id])
-  category BlogCategory? @relation(fields: [categoryId], references: [id])
-
-  @@index([slug])
-  @@index([status])
-  @@index([authorId])
-  @@index([categoryId])
-  @@index([deletedAt])
-  @@map("blog_posts")
-}
-
-model BlogCategory {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  posts BlogPost[]
-
-  @@map("blog_categories")
-}
 
 model Contact {
   id        String        @id @default(cuid())

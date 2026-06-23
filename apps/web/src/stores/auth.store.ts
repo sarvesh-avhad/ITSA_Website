@@ -10,9 +10,10 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   login: (user: AuthUser, accessToken: string) => void;
   logout: () => void;
+  hasPermission: (permission: string) => boolean;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -34,5 +35,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('accessToken');
     set({ user: null, isAuthenticated: false, isLoading: false });
+  },
+
+  hasPermission: (permission: string) => {
+    const user = get().user;
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    return user.permissions?.includes(permission) ?? false;
   },
 }));

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createEventSchema } from '@itsa/shared';
+import { createEventSchema, PERMISSIONS } from '@itsa/shared';
 import apiClient from '@/lib/api-client';
+import { useAuthStore } from '@/stores/auth.store';
 import { Search, Loader2, Edit, Trash2, Plus, X, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -17,6 +18,7 @@ const fetchAdminEvents = async (page: number, search: string) => {
 
 export default function AdminEventsPage() {
   const queryClient = useQueryClient();
+  const hasPermission = useAuthStore(state => state.hasPermission);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [modalState, setModalState] = useState<{ type: 'CREATE' | 'EDIT' | 'DELETE' | null, event: any | null }>({ type: null, event: null });
@@ -158,15 +160,24 @@ export default function AdminEventsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Events Management</h1>
-          <p className="text-muted-foreground">Manage hackathons, workshops, and seminars.</p>
+          <p className="text-muted-foreground">Create, edit, and manage platform events.</p>
         </div>
-        <button 
-          onClick={() => setModalState({ type: 'CREATE', event: null })}
-          className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 btn-glow"
-        >
-          <Plus size={18} />
-          Create Event
-        </button>
+        {hasPermission(PERMISSIONS.EVENTS_CREATE) && (
+          <button 
+            onClick={() => {
+              reset({
+                title: '', description: '', shortDescription: '', venue: '', eventType: 'INDIVIDUAL',
+                startDate: new Date().toISOString().slice(0, 16), endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+                maxParticipants: 100, minTeamSize: 2, maxTeamSize: 4
+              });
+              setModalState({ type: 'CREATE', event: null });
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-violet-600/20 btn-glow"
+          >
+            <Plus size={18} />
+            Create Event
+          </button>
+        )}
       </div>
 
       <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">

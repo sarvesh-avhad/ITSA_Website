@@ -45,11 +45,6 @@ export const PERMISSIONS = {
   ANNOUNCEMENTS_UPDATE: 'announcements:update',
   ANNOUNCEMENTS_DELETE: 'announcements:delete',
 
-  // Blog
-  BLOG_CREATE: 'blog:create',
-  BLOG_UPDATE: 'blog:update',
-  BLOG_DELETE: 'blog:delete',
-  BLOG_PUBLISH: 'blog:publish',
 
   // Users
   USERS_READ: 'users:read',

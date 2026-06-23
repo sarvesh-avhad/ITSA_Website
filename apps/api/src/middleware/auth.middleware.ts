@@ -85,6 +85,28 @@ export function requireRole(minimumRole: UserRole) {
 }
 
 /**
+ * Advanced Permissions access control middleware.
+ * Grants access if user has the specific permission, OR if they are a SUPER_ADMIN.
+ */
+export function requirePermission(permission: string) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      return next(new UnauthorizedError('Authentication required'));
+    }
+
+    if (req.user.role === 'SUPER_ADMIN') {
+      return next();
+    }
+
+    if (!req.user.permissions || !req.user.permissions.includes(permission)) {
+      return next(new ForbiddenError(`Requires permission: ${permission}`));
+    }
+
+    next();
+  };
+}
+
+/**
  * Verify that the user's account is still active in the database.
  * Use sparingly on sensitive operations (not on every request for performance).
  */

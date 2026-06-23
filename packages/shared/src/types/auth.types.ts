@@ -40,12 +40,14 @@ export interface AuthUser {
   prn?: string | null;
   branch?: string | null;
   year?: number | null;
+  permissions: string[];
 }
 
 export interface JwtPayload {
   userId: string;
   email: string;
   role: UserRole;
+  permissions: string[];
   iat?: number;
   exp?: number;
 }

@@ -180,19 +180,7 @@ export const updateSponsorSchema = createSponsorSchema.partial().extend({
 // Blog & Announcement Validators
 // ============================================================
 
-export const createBlogPostSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
-  content: z.string().min(1, 'Content is required'),
-  excerpt: z.string().max(500).optional(),
-  coverUrl: z.string().url().optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).default('DRAFT'),
-  isFeatured: z.boolean().optional(),
-  categoryId: z.string().cuid().optional(),
-  metaTitle: z.string().max(70).optional(),
-  metaDesc: z.string().max(160).optional(),
-});
 
-export const updateBlogPostSchema = createBlogPostSchema.partial();
 
 export const createAnnouncementSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -237,7 +225,7 @@ export const generateCertificatesSchema = z.object({
 
 export const searchSchema = z.object({
   q: z.string().min(1, 'Search query is required').max(200),
-  type: z.enum(['event', 'album', 'sponsor', 'announcement', 'blog']).optional(),
+  type: z.enum(['event', 'album', 'sponsor', 'announcement']).optional(),
   limit: z.coerce.number().int().positive().max(50).default(20),
 });
 
