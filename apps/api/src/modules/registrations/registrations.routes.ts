@@ -30,6 +30,35 @@ router.get('/my', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Admin: Export all registrations
+router.get('/export', authenticate, requirePermission(PERMISSIONS.EVENTS_READ), async (req, res, next) => {
+  try {
+    const format = req.query.format as 'csv' | 'excel' || 'csv';
+    const search = (req.query.search as string) || '';
+    
+    const { flatData, columns } = await registrationsService.exportAllRegistrations(search);
+    const { generateCsvBuffer, generateExcelBuffer } = await import('@/utils/export.utils');
+      
+    let buffer: Buffer;
+    let contentType: string;
+    let extension: string;
+
+    if (format === 'excel') {
+      buffer = await generateExcelBuffer(flatData, columns, 'Registrations');
+      contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      extension = 'xlsx';
+    } else {
+      buffer = await generateCsvBuffer(flatData, columns);
+      contentType = 'text/csv';
+      extension = 'csv';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename=all_registrations_export_${new Date().toISOString().split('T')[0]}.${extension}`);
+    res.send(buffer);
+  } catch (err) { next(err); }
+});
+
 // Admin: Get all registrations
 router.get('/', authenticate, requirePermission(PERMISSIONS.EVENTS_READ), async (req, res, next) => {
   try {

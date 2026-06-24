@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { QRScanner } from '@/components/admin/qr-scanner';
+import { ExportButton } from '@/components/ui/ExportButton';
 
 const fetchRegistrations = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/registrations?page=${page}&limit=10&search=${search}`);
@@ -78,70 +79,6 @@ export default function AdminRegistrationsPage() {
     REJECTED: 'bg-red-500/20 text-red-300 border-red-500/30',
   };
 
-  const exportToCsv = (registrations: any[]) => {
-    if (!registrations || registrations.length === 0) return toast.error('No data to export');
-    
-    const headers = ['Type', 'Team Name', 'Participant Name', 'Email', 'Phone', 'PRN', 'Branch', 'Year', 'Event', 'Status', 'Attended'];
-    const rows = [headers.join(',')];
-    
-    registrations.forEach(reg => {
-      if (reg.team) {
-        // Leader
-        rows.push([
-          'Team Leader',
-          `"${reg.team.name}"`,
-          `"${reg.team.leader.firstName} ${reg.team.leader.lastName}"`,
-          reg.team.leader.email,
-          reg.team.leader.phone || '',
-          reg.team.leader.prn || '',
-          reg.team.leader.branch || '',
-          reg.team.leader.year || '',
-          `"${reg.event?.title || ''}"`,
-          reg.status,
-          reg.attendanceMarked ? 'Yes' : 'No'
-        ].join(','));
-        // Members
-        reg.team.members?.forEach((m: any) => {
-          rows.push([
-            'Team Member',
-            `"${reg.team.name}"`,
-            `"${m.name}"`,
-            m.email,
-            m.phone || '',
-            m.prn || '',
-            m.branch || '',
-            m.year || '',
-            `"${reg.event?.title || ''}"`,
-            reg.status,
-            m.attendanceMarked ? 'Yes' : 'No'
-          ].join(','));
-        });
-      } else {
-        // Solo
-        rows.push([
-          'Solo Participant',
-          '""',
-          `"${reg.user?.firstName || ''} ${reg.user?.lastName || ''}"`,
-          reg.user?.email || '',
-          reg.user?.phone || '',
-          reg.user?.prn || '',
-          reg.user?.branch || '',
-          reg.user?.year || '',
-          `"${reg.event?.title || ''}"`,
-          reg.status,
-          reg.attendanceMarked ? 'Yes' : 'No'
-        ].join(','));
-      }
-    });
-
-    const csvData = new Blob([rows.join('\n')], { type: 'text/csv' });
-    const csvUrl = URL.createObjectURL(csvData);
-    const link = document.createElement('a');
-    link.href = csvUrl;
-    link.download = `registrations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(csvUrl);
-  };
 
   return (
     <div className="space-y-6">
@@ -151,12 +88,7 @@ export default function AdminRegistrationsPage() {
           <p className="text-muted-foreground">Manage event registrations, approvals, and attendance.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => exportToCsv(data?.data)}
-            className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl transition-colors font-medium"
-          >
-            Export CSV
-          </button>
+          <ExportButton endpoint="/registrations/export" queryParams={{ search }} filename="all_registrations" />
           <button
             onClick={() => setIsScannerOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-colors font-medium"

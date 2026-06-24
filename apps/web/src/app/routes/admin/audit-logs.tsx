@@ -4,6 +4,7 @@ import apiClient from '@/lib/api-client';
 import { Search, Loader2, Calendar, User, Activity, FileText, Filter, Eye, X, AlertTriangle, ShieldAlert, Info, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { SEO } from '@/components/seo';
+import { ExportButton } from '@/components/ui/ExportButton';
 
 const fetchAuditLogs = async (page: number, search: string, category: string, dateFilter: string, severity: string) => {
   const params = new URLSearchParams({
@@ -101,6 +102,7 @@ export default function AdminAuditLogsPage() {
               <option value="WARNING" className="bg-slate-900">Warning</option>
               <option value="CRITICAL" className="bg-slate-900">Critical</option>
             </select>
+            <ExportButton endpoint="/admin/audit-logs/export" queryParams={{ search, category, dateFilter, severity }} filename="audit_logs" />
           </div>
         </div>
 

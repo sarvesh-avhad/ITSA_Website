@@ -361,6 +361,90 @@ class RegistrationsService {
     };
   }
 
+  async exportAllRegistrations(search: string | undefined) {
+    const where: any = {};
+    if (search) {
+      const searchStr = String(search);
+      where.OR = [
+        { teamName: { contains: searchStr, mode: 'insensitive' } },
+        { user: { firstName: { contains: searchStr, mode: 'insensitive' } } },
+        { user: { lastName: { contains: searchStr, mode: 'insensitive' } } },
+        { user: { prn: { contains: searchStr, mode: 'insensitive' } } },
+      ];
+    }
+
+    const registrations = await prisma.registration.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
+        event: { select: { id: true, title: true, slug: true } },
+        team: {
+          include: {
+            leader: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
+            members: {
+              include: {
+                user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } }
+              }
+            }
+          }
+        }
+      },
+    });
+
+    const flatData = registrations.map(reg => {
+      const isTeam = !!reg.teamId && !!reg.team;
+      
+      let row: any = {
+        'Event Name': reg.event?.title || 'Unknown Event',
+        'Registration Type': isTeam ? 'TEAM' : 'INDIVIDUAL',
+        'Registration Date': reg.createdAt.toISOString(),
+        'Status': reg.status,
+        'Attendance Marked': reg.attendanceMarked ? 'Yes' : 'No',
+      };
+
+      if (isTeam && reg.team) {
+        row['Team Name'] = reg.team.name;
+        row['Leader'] = `${reg.team.leader.firstName || ''} ${reg.team.leader.lastName || ''} (${reg.team.leader.email})`.trim();
+        
+        const members = reg.team.members;
+        for (let i = 0; i < 4; i++) {
+          if (members[i]) {
+            const m = members[i].user;
+            row[`Member ${i + 1}`] = m ? `${m.firstName || ''} ${m.lastName || ''} (${m.email})`.trim() : members[i].email;
+          } else {
+            row[`Member ${i + 1}`] = '';
+          }
+        }
+      } else {
+        row['Team Name'] = 'N/A';
+        row['Leader'] = `${reg.user?.firstName || ''} ${reg.user?.lastName || ''} (${reg.user?.email || ''})`.trim();
+        row['Member 1'] = '';
+        row['Member 2'] = '';
+        row['Member 3'] = '';
+        row['Member 4'] = '';
+      }
+      
+      return row;
+    });
+
+    const columns = [
+      { header: 'Event Name', key: 'Event Name', width: 25 },
+      { header: 'Registration Type', key: 'Registration Type', width: 15 },
+      { header: 'Team Name', key: 'Team Name', width: 20 },
+      { header: 'Leader', key: 'Leader', width: 35 },
+      { header: 'Member 1', key: 'Member 1', width: 35 },
+      { header: 'Member 2', key: 'Member 2', width: 35 },
+      { header: 'Member 3', key: 'Member 3', width: 35 },
+      { header: 'Member 4', key: 'Member 4', width: 35 },
+      { header: 'Status', key: 'Status', width: 15 },
+      { header: 'Attendance Marked', key: 'Attendance Marked', width: 15 },
+      { header: 'Registration Date', key: 'Registration Date', width: 25 },
+    ];
+
+    return { flatData, columns };
+  }
+
   async scanRegistration(qrCode: string, req: Request) {
     if (!qrCode) throw new BadRequestError('QR Code is required');
 

@@ -59,6 +59,82 @@ router.get('/', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /export users (Admin only)
+router.get('/export', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const format = req.query.format as 'csv' | 'excel' || 'csv';
+    const search = (req.query.search as string) || '';
+
+    const where: any = { deletedAt: null };
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: 'insensitive' } },
+        { lastName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        permissions: true,
+        isActive: true,
+        createdAt: true,
+        lastLoginAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const flatData = users.map(u => ({
+      'User ID': u.id,
+      'Name': `${u.firstName || ''} ${u.lastName || ''}`.trim(),
+      'Email': u.email,
+      'Role': u.role,
+      'Permissions': u.permissions.join(', '),
+      'Is Active': u.isActive ? 'Yes' : 'No',
+      'Joined Date': u.createdAt.toISOString(),
+      'Last Login Date': u.lastLoginAt ? u.lastLoginAt.toISOString() : 'Never',
+    }));
+
+    const columns = [
+      { header: 'User ID', key: 'User ID', width: 30 },
+      { header: 'Name', key: 'Name', width: 25 },
+      { header: 'Email', key: 'Email', width: 30 },
+      { header: 'Role', key: 'Role', width: 15 },
+      { header: 'Permissions', key: 'Permissions', width: 30 },
+      { header: 'Is Active', key: 'Is Active', width: 12 },
+      { header: 'Joined Date', key: 'Joined Date', width: 25 },
+      { header: 'Last Login Date', key: 'Last Login Date', width: 25 },
+    ];
+
+    const { generateCsvBuffer, generateExcelBuffer } = await import('@/utils/export.utils');
+    
+    let buffer: Buffer;
+    let contentType: string;
+    let extension: string;
+
+    if (format === 'excel') {
+      buffer = await generateExcelBuffer(flatData, columns, 'Users');
+      contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      extension = 'xlsx';
+    } else {
+      buffer = await generateCsvBuffer(flatData, columns);
+      contentType = 'text/csv';
+      extension = 'csv';
+    }
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename=users_export_${new Date().toISOString().split('T')[0]}.${extension}`);
+    res.send(buffer);
+  } catch (err) { next(err); }
+});
+
 // PATCH update user role
 router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {

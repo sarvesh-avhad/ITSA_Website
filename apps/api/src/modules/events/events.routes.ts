@@ -36,6 +36,10 @@ router.delete('/:id', authenticate, requireRole('ADMIN'), (req, res, next) => {
   eventsController.delete(req, res).catch(next);
 });
 
+router.get('/:id/registrations/export', authenticate, requirePermission(PERMISSIONS.EVENTS_READ), (req, res, next) => {
+  eventsController.exportRegistrations(req, res, next).catch(next);
+});
+
 router.get('/:id/registrations', authenticate, requirePermission(PERMISSIONS.EVENTS_READ), (req, res, next) => {
   eventsController.getRegistrations(req, res).catch(next);
 });

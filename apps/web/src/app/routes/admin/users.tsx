@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth.store';
 import { PERMISSIONS, ROLE_BASE_PERMISSIONS, RESTRICTED_PERMISSIONS, type UserRole } from '@itsa/shared';
+import { ExportButton } from '@/components/ui/ExportButton';
 
 const fetchUsers = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/admin/users?page=${page}&limit=10&search=${search}`);
@@ -116,7 +117,7 @@ export default function AdminUsersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search users by name or email..."
+              placeholder="Search by name, email..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -125,6 +126,7 @@ export default function AdminUsersPage() {
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-muted-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
             />
           </div>
+          <ExportButton endpoint="/admin/users/export" queryParams={{ search }} filename="users" />
         </div>
 
         <div className="overflow-x-auto">

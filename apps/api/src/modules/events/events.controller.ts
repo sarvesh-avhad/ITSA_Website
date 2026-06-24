@@ -45,6 +45,123 @@ export class EventsController {
     const categories = await eventsService.getCategories();
     res.json({ success: true, data: categories });
   }
+
+  async exportRegistrations(req: Request, res: Response, next: import('express').NextFunction): Promise<void> {
+    try {
+      const format = (req.query.format as 'csv' | 'excel') || 'csv';
+      const eventId = String(req.params.id);
+      const search = req.query.search ? String(req.query.search) : undefined;
+      const status = req.query.status ? String(req.query.status) : undefined;
+
+      const event = await import('@/lib/prisma').then(m => m.prisma.event.findUnique({ where: { id: eventId } }));
+      if (!event) { res.status(404).json({ success: false, error: { message: 'Event not found' } }); return; }
+
+      const where: any = { eventId, deletedAt: null };
+      if (status) where.status = status;
+      if (search) {
+        where.user = {
+          OR: [
+            { firstName: { contains: search as string, mode: 'insensitive' } },
+            { lastName: { contains: search as string, mode: 'insensitive' } },
+            { email: { contains: search as string, mode: 'insensitive' } },
+            { prn: { contains: search as string, mode: 'insensitive' } },
+          ],
+        };
+      }
+
+      const registrations = await import('@/lib/prisma').then(m => m.prisma.registration.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true, firstName: true, lastName: true, email: true,
+              prn: true, branch: true, year: true, phone: true,
+            },
+          },
+          team: {
+            include: {
+              leader: { select: { id: true, firstName: true, lastName: true, email: true } },
+              members: { include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } } },
+            },
+          },
+        },
+      }));
+
+      const flatData = registrations.map(reg => {
+        const isTeam = !!reg.teamId && !!reg.team;
+        
+        let row: any = {
+          'Event Name': event.title,
+          'Registration Type': isTeam ? 'TEAM' : 'INDIVIDUAL',
+          'Registration Date': reg.createdAt.toISOString(),
+          'Status': reg.status,
+          'Attendance Marked': reg.attendanceMarked ? 'Yes' : 'No',
+        };
+
+        if (isTeam && reg.team) {
+          row['Team Name'] = reg.team.name;
+          row['Leader'] = `${reg.team.leader.firstName || ''} ${reg.team.leader.lastName || ''} (${reg.team.leader.email})`.trim();
+          
+          // Flatten up to 4 members horizontally
+          const members = reg.team.members;
+          for (let i = 0; i < 4; i++) {
+            if (members[i]) {
+              const m = members[i].user;
+              row[`Member ${i + 1}`] = m ? `${m.firstName || ''} ${m.lastName || ''} (${m.email})`.trim() : members[i].email;
+            } else {
+              row[`Member ${i + 1}`] = '';
+            }
+          }
+        } else {
+          row['Team Name'] = 'N/A';
+          row['Leader'] = `${reg.user.firstName || ''} ${reg.user.lastName || ''} (${reg.user.email})`.trim();
+          row['Member 1'] = '';
+          row['Member 2'] = '';
+          row['Member 3'] = '';
+          row['Member 4'] = '';
+        }
+        
+        return row;
+      });
+
+      const columns = [
+        { header: 'Event Name', key: 'Event Name', width: 25 },
+        { header: 'Registration Type', key: 'Registration Type', width: 15 },
+        { header: 'Team Name', key: 'Team Name', width: 20 },
+        { header: 'Leader', key: 'Leader', width: 35 },
+        { header: 'Member 1', key: 'Member 1', width: 35 },
+        { header: 'Member 2', key: 'Member 2', width: 35 },
+        { header: 'Member 3', key: 'Member 3', width: 35 },
+        { header: 'Member 4', key: 'Member 4', width: 35 },
+        { header: 'Status', key: 'Status', width: 15 },
+        { header: 'Attendance Marked', key: 'Attendance Marked', width: 15 },
+        { header: 'Registration Date', key: 'Registration Date', width: 25 },
+      ];
+
+      const { generateCsvBuffer, generateExcelBuffer } = await import('@/utils/export.utils');
+      
+      let buffer: Buffer;
+      let contentType: string;
+      let extension: string;
+
+      if (format === 'excel') {
+        buffer = await generateExcelBuffer(flatData, columns, 'Registrations');
+        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        extension = 'xlsx';
+      } else {
+        buffer = await generateCsvBuffer(flatData, columns);
+        contentType = 'text/csv';
+        extension = 'csv';
+      }
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename=registrations_export_${new Date().toISOString().split('T')[0]}.${extension}`);
+      res.send(buffer);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const eventsController = new EventsController();
