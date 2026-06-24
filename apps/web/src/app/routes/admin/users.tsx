@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth.store';
-import { PERMISSIONS } from '@itsa/shared';
+import { PERMISSIONS, ROLE_BASE_PERMISSIONS, RESTRICTED_PERMISSIONS, type UserRole } from '@itsa/shared';
 
 const fetchUsers = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/admin/users?page=${page}&limit=10&search=${search}`);
@@ -77,6 +77,10 @@ export default function AdminUsersPage() {
   });
 
   const openRoleModal = (user: any) => {
+    if (currentUser?.role !== 'SUPER_ADMIN' && (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
+      toast.error('You do not have permission to modify this role.');
+      return;
+    }
     setSelectedRole(user.role);
     setModalState({ type: 'ROLE', user });
   };
@@ -294,29 +298,40 @@ export default function AdminUsersPage() {
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {Object.entries(
                   Object.entries(PERMISSIONS).reduce((acc: any, [key, value]) => {
-                    const category = key.split('_')[0];
+                    const isRestricted = RESTRICTED_PERMISSIONS.includes(value);
+                    const category = isRestricted ? 'Restricted Permissions' : 'Normal Permissions';
                     if (!acc[category]) acc[category] = [];
                     acc[category].push({ key, value });
                     return acc;
                   }, {})
                 ).map(([category, perms]: [string, any]) => (
                   <div key={category} className="space-y-3">
-                    <h3 className="text-sm font-semibold text-violet-400 uppercase tracking-wider">{category}</h3>
+                    <h3 className={cn("text-sm font-semibold uppercase tracking-wider", category === 'Restricted Permissions' ? "text-rose-400" : "text-violet-400")}>{category}</h3>
                     <div className="space-y-2 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-                      {perms.map((p: any) => (
-                        <label key={p.key} className="flex items-start gap-3 cursor-pointer group">
+                      {perms.map((p: any) => {
+                        const targetUserRole = permissionDrawer.user.role as UserRole;
+                        const isInherited = targetUserRole === 'SUPER_ADMIN' || (ROLE_BASE_PERMISSIONS[targetUserRole] || []).includes(p.value);
+                        const isRestricted = RESTRICTED_PERMISSIONS.includes(p.value);
+                        const isLockedRestricted = isRestricted && currentUser?.role !== 'SUPER_ADMIN';
+                        const isDisabled = isInherited || isLockedRestricted;
+                        const isChecked = isInherited || selectedPermissions.includes(p.value);
+
+                        return (
+                        <label key={p.key} className={cn("flex items-start gap-3 group", isDisabled ? "cursor-not-allowed opacity-70" : "cursor-pointer")} title={isInherited ? "This permission is inherited from the user's role and cannot be removed individually." : isLockedRestricted ? "Only Super Admin can modify restricted permissions." : ""}>
                           <div className="relative flex items-center mt-1">
                             <input
                               type="checkbox"
-                              checked={selectedPermissions.includes(p.value)}
+                              checked={isChecked}
+                              disabled={isDisabled}
                               onChange={(e) => {
+                                if (isDisabled) return;
                                 if (e.target.checked) {
                                   setSelectedPermissions([...selectedPermissions, p.value]);
                                 } else {
                                   setSelectedPermissions(selectedPermissions.filter(v => v !== p.value));
                                 }
                               }}
-                              className="w-4 h-4 rounded border-white/20 bg-black/50 text-violet-600 focus:ring-violet-600 focus:ring-offset-background"
+                              className="w-4 h-4 rounded border-white/20 bg-black/50 text-violet-600 focus:ring-violet-600 focus:ring-offset-background disabled:bg-white/10"
                             />
                           </div>
                           <div className="flex-1">
@@ -326,7 +341,7 @@ export default function AdminUsersPage() {
                             <div className="text-xs text-muted-foreground">{p.value}</div>
                           </div>
                         </label>
-                      ))}
+                      )})}
                     </div>
                   </div>
                 ))}

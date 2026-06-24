@@ -88,6 +88,10 @@ apiClient.interceptors.response.use(
       }
     }
 
+    if (error.response?.status === 403) {
+      window.dispatchEvent(new Event('auth-403'));
+    }
+
     return Promise.reject(error);
   }
 );

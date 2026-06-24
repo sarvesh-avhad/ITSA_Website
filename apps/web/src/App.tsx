@@ -4,6 +4,8 @@ import { Toaster } from 'sonner';
 import { MainLayout } from '@/components/layout/main-layout';
 import { AuthLayout } from '@/components/layout/auth-layout';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { PermissionGuard } from '@/components/layout/permission-guard';
+import { PERMISSIONS } from '@itsa/shared';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import HomePage from '@/app/routes/home';
 import LoginPage from '@/app/routes/auth/login';
@@ -70,6 +72,30 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
       }
     };
     initAuth();
+
+    // Periodic 60-second sync
+    const intervalId = setInterval(() => {
+      if (localStorage.getItem('accessToken')) {
+        apiClient.get('/auth/me')
+          .then(({ data }) => setUser(data.data))
+          .catch(() => logout());
+      }
+    }, 60000);
+
+    // Listen for 403 events to force immediate sync
+    const handle403 = () => {
+      if (localStorage.getItem('accessToken')) {
+        apiClient.get('/auth/me')
+          .then(({ data }) => setUser(data.data))
+          .catch(() => logout());
+      }
+    };
+    window.addEventListener('auth-403', handle403);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('auth-403', handle403);
+    };
   }, [setUser, logout, setLoading]);
 
   return <>{children}</>;
@@ -116,15 +142,15 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />
             <Route path="my-permissions" element={<AdminMyPermissionsPage />} />
-            <Route path="users" element={<AdminUsersPage />} />
-            <Route path="events" element={<AdminEventsPage />} />
-            <Route path="registrations" element={<AdminRegistrationsPage />} />
-            <Route path="gallery" element={<AdminGalleryPage />} />
-            <Route path="contacts" element={<AdminContactsPage />} />
-            <Route path="announcements" element={<AdminAnnouncementsPage />} />
-            <Route path="sponsors" element={<AdminSponsorsPage />} />
-            <Route path="certificates" element={<AdminCertificatesPage />} />
-            <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="users" element={<PermissionGuard permission={PERMISSIONS.USERS_READ}><AdminUsersPage /></PermissionGuard>} />
+            <Route path="events" element={<PermissionGuard permission={[PERMISSIONS.EVENTS_CREATE, PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS]}><AdminEventsPage /></PermissionGuard>} />
+            <Route path="registrations" element={<PermissionGuard permission={PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS}><AdminRegistrationsPage /></PermissionGuard>} />
+            <Route path="gallery" element={<PermissionGuard permission={[PERMISSIONS.GALLERY_CREATE, PERMISSIONS.GALLERY_UPLOAD]}><AdminGalleryPage /></PermissionGuard>} />
+            <Route path="contacts" element={<PermissionGuard permission={PERMISSIONS.CMS_UPDATE}><AdminContactsPage /></PermissionGuard>} />
+            <Route path="announcements" element={<PermissionGuard permission={PERMISSIONS.ANNOUNCEMENTS_CREATE}><AdminAnnouncementsPage /></PermissionGuard>} />
+            <Route path="sponsors" element={<PermissionGuard permission={PERMISSIONS.SPONSORS_CREATE}><AdminSponsorsPage /></PermissionGuard>} />
+            <Route path="certificates" element={<PermissionGuard permission={PERMISSIONS.CERTIFICATES_GENERATE}><AdminCertificatesPage /></PermissionGuard>} />
+            <Route path="settings" element={<PermissionGuard permission={PERMISSIONS.SETTINGS_MANAGE}><AdminSettingsPage /></PermissionGuard>} />
             <Route path="*" element={<div className="p-8 text-center text-muted-foreground">This admin module is coming soon.</div>} />
           </Route>
         </Routes>
