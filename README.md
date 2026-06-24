@@ -123,5 +123,5 @@ We welcome contributions from ITSA members and the open-source community! Whethe
 Distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
-  <p>Built with ❤️ by the ITSA Tech Team</p>
+  <p>Built with ❤️ by Sarvesh Avhad</p>
 </div>
