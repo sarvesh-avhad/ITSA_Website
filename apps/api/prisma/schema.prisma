@@ -19,7 +19,6 @@ enum UserRole {
   GUEST
   STUDENT
   ITSA_MEMBER
-  EVENT_COORDINATOR
   ADMIN
   SUPER_ADMIN
 }
@@ -75,18 +74,7 @@ enum ContactStatus {
   CLOSED
 }
 
-enum AuditAction {
-  CREATE
-  UPDATE
-  DELETE
-  LOGIN
-  LOGOUT
-  EXPORT
-  APPROVE
-  REJECT
-  UPLOAD
-  DOWNLOAD
-}
+
 
 // ============================================================
 // MODELS
@@ -117,11 +105,11 @@ model User {
   teamsLed      Team[]         @relation("TeamLeader")
   teamMembers   TeamMember[]
   refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
+  auditLogsActed   AuditLog[] @relation("AuditActor")
+  auditLogsTarget  AuditLog[] @relation("AuditTarget")
 
   certificates  Certificate[]
   contacts      Contact[]
-  assignedEvents Event[] @relation("EventCoordinators")
 
   @@index([email])
   @@index([prn])
@@ -166,7 +154,6 @@ model Event {
   albums        GalleryAlbum[]
   certificates  Certificate[]
   sponsors      SponsorEvent[]
-  coordinators  User[]          @relation("EventCoordinators")
 
   @@index([slug])
   @@index([status])
@@ -426,23 +413,30 @@ model CertificateTemplate {
 }
 
 model AuditLog {
-  id         String      @id @default(cuid())
-  userId     String?
-  action     AuditAction
-  resource   String
-  resourceId String?
-  oldData    Json?
-  newData    Json?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime    @default(now())
+  id              String    @id @default(cuid())
+  actorId         String?
+  actorName       String?
+  actorEmail      String?
+  targetUserId    String?
+  targetUserName  String?
+  targetUserEmail String?
+  action          String
+  severity        String    @default("INFO")
+  resource        String
+  resourceId      String?
+  oldValue        Json?
+  newValue        Json?
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  actor      User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  targetUser User? @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
 
-  @@index([userId])
   @@index([action])
-  @@index([resource])
   @@index([createdAt])
+  @@index([actorId])
+  @@index([targetUserId])
   @@map("audit_logs")
 }
 

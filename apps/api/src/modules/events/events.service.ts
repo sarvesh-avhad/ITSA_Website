@@ -145,10 +145,11 @@ class EventsService {
 
     await invalidateCacheByPrefix('events');
     await createAuditLog(req, {
-      action: 'CREATE',
+      action: 'EVENT_CREATED',
+      severity: 'INFO',
       resource: 'Event',
       resourceId: event.id,
-      newData: { title: event.title, slug: event.slug },
+      newValue: { title: event.title, slug: event.slug },
     });
 
     return event;
@@ -174,11 +175,12 @@ class EventsService {
 
     await invalidateCacheByPrefix('events');
     await createAuditLog(req, {
-      action: 'UPDATE',
+      action: 'EVENT_UPDATED',
+      severity: 'INFO',
       resource: 'Event',
       resourceId: event.id,
-      oldData: { title: existing.title, status: existing.status },
-      newData: { title: event.title, status: event.status },
+      oldValue: { title: existing.title, status: existing.status },
+      newValue: { title: event.title, status: event.status },
     });
 
     return event;
@@ -196,10 +198,11 @@ class EventsService {
 
     await invalidateCacheByPrefix('events');
     await createAuditLog(req, {
-      action: 'DELETE',
+      action: 'EVENT_DELETED',
+      severity: 'WARNING',
       resource: 'Event',
       resourceId: id,
-      oldData: { title: event.title },
+      oldValue: { title: event.title },
     });
   }
 
@@ -256,6 +259,7 @@ class EventsService {
       orderBy: { name: 'asc' },
     });
   }
+
 }
 
 export const eventsService = new EventsService();

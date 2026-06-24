@@ -34,7 +34,7 @@ export function AdminLayout() {
     return <div className="min-h-screen bg-background flex items-center justify-center"><div className="w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div></div>;
   }
 
-  if (!isAuthenticated || !user || !['ADMIN', 'EVENT_COORDINATOR', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role)) {
+  if (!isAuthenticated || !user || !['ADMIN', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role)) {
     return <Navigate to="/auth/login" replace />;
   }
 
@@ -65,7 +65,6 @@ export function AdminLayout() {
               <span className="font-bold text-white tracking-tight">
                 {user?.role === 'SUPER_ADMIN' ? 'Super Admin Panel' : 
                  user?.role === 'ADMIN' ? 'Admin Panel' :
-                 user?.role === 'EVENT_COORDINATOR' ? 'Coordinator Panel' :
                  user?.role === 'ITSA_MEMBER' ? 'Member Panel' : 'Panel'}
               </span>
             </Link>

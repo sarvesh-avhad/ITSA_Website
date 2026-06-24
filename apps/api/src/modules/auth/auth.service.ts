@@ -70,10 +70,12 @@ class AuthService {
 
     // Audit log
     await createAuditLog(req, {
-      action: 'CREATE',
+      action: 'USER_CREATED',
+      severity: 'INFO',
       resource: 'User',
       resourceId: user.id,
-      newData: { email: user.email, role: user.role },
+      targetUserId: user.id,
+      newValue: { email: user.email, role: user.role },
     });
 
     return {
@@ -112,12 +114,6 @@ class AuthService {
     // Set refresh token cookie
     this.setRefreshTokenCookie(res, tokens.refreshToken);
 
-    // Audit log
-    await createAuditLog(req, {
-      action: 'LOGIN',
-      resource: 'User',
-      resourceId: user.id,
-    });
 
     return {
       user: this.toAuthUser(user),
@@ -249,11 +245,6 @@ class AuthService {
 
     res.clearCookie('refreshToken');
 
-    await createAuditLog(req, {
-      action: 'LOGOUT',
-      resource: 'User',
-      resourceId: req.user?.userId,
-    });
   }
 
   // ============================================================
@@ -285,7 +276,7 @@ class AuthService {
   // ============================================================
   // Reset Password
   // ============================================================
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async resetPassword(token: string, newPassword: string): Promise<string> {
     const storedToken = await prisma.refreshToken.findUnique({
       where: { token },
     });
@@ -311,6 +302,8 @@ class AuthService {
         data: { isRevoked: true },
       }),
     ]);
+    
+    return storedToken.userId;
   }
 
   // ============================================================

@@ -118,7 +118,7 @@ export function MainLayout() {
 
             {isAuthenticated && user ? (
               <div className="hidden sm:flex items-center gap-2">
-                {['ADMIN', 'EVENT_COORDINATOR', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role) && (
+                {['ADMIN', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role) && (
                   <Link
                     to="/admin"
                     className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10 transition-all duration-300"
@@ -126,7 +126,6 @@ export function MainLayout() {
                     <Shield size={16} />
                     {user.role === 'SUPER_ADMIN' ? 'Super Admin Panel' : 
                      user.role === 'ADMIN' ? 'Admin Panel' :
-                     user.role === 'EVENT_COORDINATOR' ? 'Coordinator Panel' :
                      user.role === 'ITSA_MEMBER' ? 'Member Panel' : 'Panel'}
                   </Link>
                 )}
@@ -193,7 +192,7 @@ export function MainLayout() {
                 <div className="pt-4 mt-2 border-t border-white/10 space-y-2">
                   {isAuthenticated && user ? (
                     <>
-                      {['ADMIN', 'EVENT_COORDINATOR', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role) && (
+                      {['ADMIN', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role) && (
                         <Link
                           to="/admin"
                           className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white hover:bg-white/5 transition-colors"
@@ -201,7 +200,6 @@ export function MainLayout() {
                           <Shield size={18} className="text-violet-400" />
                           {user.role === 'SUPER_ADMIN' ? 'Super Admin Panel' : 
                            user.role === 'ADMIN' ? 'Admin Panel' :
-                           user.role === 'EVENT_COORDINATOR' ? 'Coordinator Panel' :
                            user.role === 'ITSA_MEMBER' ? 'Member Panel' : 'Panel'}
                         </Link>
                       )}

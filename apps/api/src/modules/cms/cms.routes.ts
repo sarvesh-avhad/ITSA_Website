@@ -53,9 +53,10 @@ router.patch('/', authenticate, requireRole('ADMIN'), async (req, res, next) => 
 
     await invalidateCacheByPrefix('cms');
     await createAuditLog(req, {
-      action: 'UPDATE',
+      action: 'SETTINGS_UPDATED',
+      severity: 'CRITICAL',
       resource: 'SiteConfig',
-      newData: { updatedKeys: updates.map(u => u.key) },
+      newValue: { updatedKeys: updates.map(u => u.key) },
     });
 
     res.json({ success: true, data: { message: 'Configuration updated successfully' } });

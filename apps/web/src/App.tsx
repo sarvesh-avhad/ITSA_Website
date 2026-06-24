@@ -32,6 +32,7 @@ import AdminAnnouncementsPage from '@/app/routes/admin/announcements';
 import AdminSponsorsPage from '@/app/routes/admin/sponsors';
 import AdminCertificatesPage from '@/app/routes/admin/certificates';
 import AdminSettingsPage from '@/app/routes/admin/settings';
+import AdminAuditLogsPage from '@/app/routes/admin/audit-logs';
 import AdminMyPermissionsPage from '@/app/routes/admin/my-permissions';
 import StudentDashboardPage from '@/app/routes/dashboard/index';
 import StudentCertificatesPage from '@/app/routes/dashboard/certificates';
@@ -150,6 +151,7 @@ export default function App() {
             <Route path="announcements" element={<PermissionGuard permission={PERMISSIONS.ANNOUNCEMENTS_CREATE}><AdminAnnouncementsPage /></PermissionGuard>} />
             <Route path="sponsors" element={<PermissionGuard permission={PERMISSIONS.SPONSORS_CREATE}><AdminSponsorsPage /></PermissionGuard>} />
             <Route path="certificates" element={<PermissionGuard permission={PERMISSIONS.CERTIFICATES_GENERATE}><AdminCertificatesPage /></PermissionGuard>} />
+            <Route path="audit-logs" element={<PermissionGuard permission={PERMISSIONS.AUDIT_LOGS_READ}><AdminAuditLogsPage /></PermissionGuard>} />
             <Route path="settings" element={<PermissionGuard permission={PERMISSIONS.SETTINGS_MANAGE}><AdminSettingsPage /></PermissionGuard>} />
             <Route path="*" element={<div className="p-8 text-center text-muted-foreground">This admin module is coming soon.</div>} />
           </Route>

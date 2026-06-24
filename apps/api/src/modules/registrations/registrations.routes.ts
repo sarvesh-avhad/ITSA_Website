@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '@/middleware/auth.middleware';
+import { authenticate, requireRole, requirePermission } from '@/middleware/auth.middleware';
 import { validate } from '@/middleware/validate.middleware';
-import { individualRegistrationSchema, teamRegistrationSchema } from '@itsa/shared';
+import { individualRegistrationSchema, teamRegistrationSchema, PERMISSIONS } from '@itsa/shared';
 import { registrationsService } from './registrations.service';
 
 const router = Router();
@@ -31,7 +31,7 @@ router.get('/my', authenticate, async (req, res, next) => {
 });
 
 // Admin: Get all registrations
-router.get('/', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
+router.get('/', authenticate, requirePermission(PERMISSIONS.EVENTS_READ), async (req, res, next) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -43,7 +43,7 @@ router.get('/', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res,
 });
 
 // Admin: Scan QR Code
-router.post('/scan', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
+router.post('/scan', authenticate, requirePermission(PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS), async (req, res, next) => {
   try {
     const result = await registrationsService.scanRegistration(req.body.qrCode, req);
     res.json({ success: true, data: result });
@@ -58,15 +58,15 @@ router.delete('/:id', authenticate, async (req, res, next) => {
 });
 
 // Admin: Update status
-router.patch('/:id/status', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
+router.patch('/:id/status', authenticate, requirePermission(PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS), async (req, res, next) => {
   try {
     const result = await registrationsService.updateStatus((req.params.id as string) as string, req.body.status, req);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 });
 
-// Coordinator: Mark attendance
-router.post('/:id/attendance', authenticate, requireRole('EVENT_COORDINATOR'), async (req, res, next) => {
+// Admin: Mark attendance
+router.post('/:id/attendance', authenticate, requirePermission(PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS), async (req, res, next) => {
   try {
     const result = await registrationsService.markAttendance((req.params.id as string) as string, req);
     res.json({ success: true, data: result });

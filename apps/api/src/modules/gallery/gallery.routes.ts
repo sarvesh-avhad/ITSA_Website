@@ -105,7 +105,13 @@ router.post('/albums', authenticate, requirePermission(PERMISSIONS.GALLERY_CREAT
       data: { ...req.body, slug, isPublished: true },
     });
     await invalidateCacheByPrefix('gallery');
-    await createAuditLog(req, { action: 'CREATE', resource: 'GalleryAlbum', resourceId: album.id });
+    await createAuditLog(req, { 
+      action: 'ALBUM_CREATED', 
+      severity: 'INFO',
+      resource: 'GalleryAlbum', 
+      resourceId: album.id,
+      newValue: { title: album.title }
+    });
     res.status(201).json({ success: true, data: album });
   } catch (err: any) { 
     if (err.code === 'P2002') {
@@ -120,7 +126,12 @@ router.patch('/albums/:id', authenticate, requirePermission(PERMISSIONS.GALLERY_
   try {
       const album = await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: req.body });
     await invalidateCacheByPrefix('gallery');
-    await createAuditLog(req, { action: 'UPDATE', resource: 'GalleryAlbum', resourceId: album.id });
+    await createAuditLog(req, { 
+      action: 'ALBUM_UPDATED', 
+      severity: 'INFO',
+      resource: 'GalleryAlbum', 
+      resourceId: album.id 
+    });
     res.json({ success: true, data: album });
   } catch (err) { next(err); }
 });
@@ -130,7 +141,12 @@ router.delete('/albums/:id', authenticate, requireRole('ADMIN'), async (req, res
   try {
     await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
     await invalidateCacheByPrefix('gallery');
-    await createAuditLog(req, { action: 'DELETE', resource: 'Album', resourceId: (req.params.id as string) as string });
+    await createAuditLog(req, { 
+      action: 'ALBUM_DELETED', 
+      severity: 'WARNING',
+      resource: 'GalleryAlbum', 
+      resourceId: (req.params.id as string) as string 
+    });
     res.json({ success: true, data: { message: 'Album deleted' } });
   } catch (err) { next(err); }
 });
@@ -143,7 +159,13 @@ router.post('/albums/:id/media', authenticate, requirePermission(PERMISSIONS.GAL
       data: { albumId: (req.params.id as string), type, url, thumbnailUrl, publicId, width, height, sizeBytes, caption },
     });
     await invalidateCacheByPrefix('gallery');
-    await createAuditLog(req, { action: 'UPLOAD', resource: 'GalleryMedia', resourceId: media.id });
+    await createAuditLog(req, { 
+      action: 'MEDIA_UPLOADED', 
+      severity: 'INFO',
+      resource: 'GalleryMedia', 
+      resourceId: media.id,
+      newValue: { type, publicId }
+    });
     res.status(201).json({ success: true, data: media });
   } catch (err) { next(err); }
 });
@@ -153,6 +175,12 @@ router.delete('/media/:id', authenticate, requirePermission(PERMISSIONS.GALLERY_
   try {
     await prisma.galleryMedia.delete({ where: { id: (req.params.id as string) } });
     await invalidateCacheByPrefix('gallery');
+    await createAuditLog(req, { 
+      action: 'MEDIA_DELETED', 
+      severity: 'WARNING',
+      resource: 'GalleryMedia', 
+      resourceId: req.params.id as string 
+    });
     res.json({ success: true, data: { message: 'Media deleted' } });
   } catch (err) { next(err); }
 });

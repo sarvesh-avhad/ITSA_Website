@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '@/middleware/auth.middleware';
+import { authenticate, requireRole, requirePermission } from '@/middleware/auth.middleware';
 import { validate, validateQuery } from '@/middleware/validate.middleware';
-import { createAnnouncementSchema, updateAnnouncementSchema, paginationSchema } from '@itsa/shared';
+import { createAnnouncementSchema, updateAnnouncementSchema, paginationSchema, PERMISSIONS } from '@itsa/shared';
 import { prisma } from '@/lib/prisma';
 import { NotFoundError } from '@/lib/errors';
 import { createAuditLog } from '@/middleware/audit.middleware';
@@ -49,7 +49,7 @@ router.get('/:slug', async (req, res, next) => {
 });
 
 // Create
-router.post('/', authenticate, requireRole('EVENT_COORDINATOR'), validate(createAnnouncementSchema), async (req, res, next) => {
+router.post('/', authenticate, requirePermission(PERMISSIONS.ANNOUNCEMENTS_CREATE), validate(createAnnouncementSchema), async (req, res, next) => {
   try {
     const slug = slugify(req.body.title, { lower: true, strict: true }) + '-' + Date.now();
     const announcement = await prisma.announcement.create({
@@ -60,13 +60,19 @@ router.post('/', authenticate, requireRole('EVENT_COORDINATOR'), validate(create
         publishedAt: req.body.isPublished ? new Date() : null,
       },
     });
-    await createAuditLog(req, { action: 'CREATE', resource: 'Announcement', resourceId: announcement.id });
+    await createAuditLog(req, { 
+      action: 'ANNOUNCEMENT_CREATED', 
+      severity: 'INFO',
+      resource: 'Announcement', 
+      resourceId: announcement.id,
+      newValue: { title: announcement.title }
+    });
     res.status(201).json({ success: true, data: announcement });
   } catch (err) { next(err); }
 });
 
 // Update
-router.patch('/:id', authenticate, requireRole('EVENT_COORDINATOR'), validate(updateAnnouncementSchema), async (req, res, next) => {
+router.patch('/:id', authenticate, requirePermission(PERMISSIONS.ANNOUNCEMENTS_UPDATE), validate(updateAnnouncementSchema), async (req, res, next) => {
   try {
     const existing = await prisma.announcement.findUnique({ where: { id: (req.params.id as string) } });
     if (!existing) throw new NotFoundError('Announcement');
@@ -75,7 +81,12 @@ router.patch('/:id', authenticate, requireRole('EVENT_COORDINATOR'), validate(up
     if (req.body.isPublished && !existing.publishedAt) data.publishedAt = new Date();
 
     const announcement = await prisma.announcement.update({ where: { id: (req.params.id as string) }, data });
-    await createAuditLog(req, { action: 'UPDATE', resource: 'Announcement', resourceId: announcement.id });
+    await createAuditLog(req, { 
+      action: 'ANNOUNCEMENT_UPDATED', 
+      severity: 'INFO',
+      resource: 'Announcement', 
+      resourceId: announcement.id 
+    });
     res.json({ success: true, data: announcement });
   } catch (err) { next(err); }
 });
@@ -84,7 +95,12 @@ router.patch('/:id', authenticate, requireRole('EVENT_COORDINATOR'), validate(up
 router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
     await prisma.announcement.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
-    await createAuditLog(req, { action: 'DELETE', resource: 'Announcement', resourceId: (req.params.id as string) as string });
+    await createAuditLog(req, { 
+      action: 'ANNOUNCEMENT_DELETED', 
+      severity: 'WARNING',
+      resource: 'Announcement', 
+      resourceId: (req.params.id as string) as string 
+    });
     res.json({ success: true, data: { message: 'Announcement deleted' } });
   } catch (err) { next(err); }
 });

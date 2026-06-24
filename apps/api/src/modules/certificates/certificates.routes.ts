@@ -93,9 +93,10 @@ router.post('/issue', authenticate, requireRole('ADMIN'), validate(issueCertSche
     );
 
     await createAuditLog(req, {
-      action: 'CREATE',
+      action: 'CERTIFICATE_ISSUED',
+      severity: 'INFO',
       resource: 'Certificate',
-      newData: { eventId, count: certificates.length },
+      newValue: { eventId, count: certificates.length },
     });
 
     res.status(201).json({ success: true, data: { count: certificates.length } });

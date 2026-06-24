@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createEventSchema, PERMISSIONS } from '@itsa/shared';
 import apiClient from '@/lib/api-client';
 import { useAuthStore } from '@/stores/auth.store';
-import { Search, Loader2, Edit, Trash2, Plus, X, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Search, Loader2, Edit, Trash2, Plus, X, AlertTriangle, Eye, EyeOff, Users, UserPlus, UserMinus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,7 +21,7 @@ export default function AdminEventsPage() {
   const hasPermission = useAuthStore(state => state.hasPermission);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [modalState, setModalState] = useState<{ type: 'CREATE' | 'EDIT' | 'DELETE' | null, event: any | null }>({ type: null, event: null });
+  const [modalState, setModalState] = useState<{ type: 'CREATE' | 'EDIT' | 'DELETE' | 'COORDINATORS' | null, event: any | null }>({ type: null, event: null });
   
   const { data, isLoading } = useQuery({
     queryKey: ['admin-events', page, search],
@@ -532,6 +532,9 @@ export default function AdminEventsPage() {
           </div>
         )}
       </AnimatePresence>
+
+
     </div>
   );
 }
+

@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '@/middleware/auth.middleware';
+import { authenticate, requirePermission } from '@/middleware/auth.middleware';
 import { upload } from '@/config/cloudinary';
 import { createAuditLog } from '@/middleware/audit.middleware';
+import { PERMISSIONS } from '@itsa/shared';
 
 const router = Router();
 
 // Upload a single file
-router.post('/', authenticate, requireRole('EVENT_COORDINATOR'), upload.single('file'), async (req, res, next) => {
+router.post('/', authenticate, requirePermission(PERMISSIONS.GALLERY_UPLOAD), upload.single('file'), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, error: { message: 'No file uploaded' } });
@@ -34,7 +35,7 @@ router.post('/', authenticate, requireRole('EVENT_COORDINATOR'), upload.single('
 });
 
 // Upload multiple files
-router.post('/batch', authenticate, requireRole('EVENT_COORDINATOR'), upload.array('files', 10), async (req, res, next) => {
+router.post('/batch', authenticate, requirePermission(PERMISSIONS.GALLERY_UPLOAD), upload.array('files', 10), async (req, res, next) => {
   try {
     if (!req.files || (req.files as any[]).length === 0) {
       return res.status(400).json({ success: false, error: { message: 'No files uploaded' } });

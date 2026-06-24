@@ -53,7 +53,13 @@ router.post('/', authenticate, requireRole('ADMIN'), validate(createSponsorSchem
     const slug = slugify(req.body.name, { lower: true, strict: true });
     const sponsor = await prisma.sponsor.create({ data: { ...req.body, slug } });
     await invalidateCacheByPrefix('sponsors');
-    await createAuditLog(req, { action: 'CREATE', resource: 'Sponsor', resourceId: sponsor.id });
+    await createAuditLog(req, { 
+      action: 'SPONSOR_CREATED', 
+      severity: 'INFO',
+      resource: 'Sponsor', 
+      resourceId: sponsor.id,
+      newValue: { name: sponsor.name } 
+    });
     res.status(201).json({ success: true, data: sponsor });
   } catch (err) { next(err); }
 });
@@ -63,7 +69,12 @@ router.patch('/:id', authenticate, requireRole('ADMIN'), validate(updateSponsorS
   try {
     const sponsor = await prisma.sponsor.update({ where: { id: (req.params.id as string) }, data: req.body });
     await invalidateCacheByPrefix('sponsors');
-    await createAuditLog(req, { action: 'UPDATE', resource: 'Sponsor', resourceId: sponsor.id });
+    await createAuditLog(req, { 
+      action: 'SPONSOR_UPDATED', 
+      severity: 'INFO',
+      resource: 'Sponsor', 
+      resourceId: sponsor.id 
+    });
     res.json({ success: true, data: sponsor });
   } catch (err) { next(err); }
 });
@@ -73,7 +84,12 @@ router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res, next)
   try {
     await prisma.sponsor.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
     await invalidateCacheByPrefix('sponsors');
-    await createAuditLog(req, { action: 'DELETE', resource: 'Sponsor', resourceId: (req.params.id as string) as string });
+    await createAuditLog(req, { 
+      action: 'SPONSOR_DELETED', 
+      severity: 'WARNING',
+      resource: 'Sponsor', 
+      resourceId: (req.params.id as string) as string 
+    });
     res.json({ success: true, data: { message: 'Sponsor deleted' } });
   } catch (err) { next(err); }
 });

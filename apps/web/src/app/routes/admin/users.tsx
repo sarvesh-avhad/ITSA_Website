@@ -94,7 +94,6 @@ export default function AdminUsersPage() {
     const styles = {
       SUPER_ADMIN: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
       ADMIN: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
-      EVENT_COORDINATOR: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
       ITSA_MEMBER: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
       STUDENT: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
       GUEST: 'bg-slate-500/20 text-slate-300 border-slate-500/30',
@@ -180,8 +179,8 @@ export default function AdminUsersPage() {
                         <button onClick={() => openRoleModal(user)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Manage Role">
                           <UserCog size={16} />
                         </button>
-                        <button onClick={() => setModalState({ type: 'SUSPEND', user })} className="p-2 text-muted-foreground hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Suspend User">
-                          <ShieldAlert size={16} />
+                        <button onClick={() => setModalState({ type: 'SUSPEND', user })} className={cn("p-2 text-muted-foreground rounded-lg transition-colors", user.isActive ? "hover:text-red-400 hover:bg-red-400/10" : "hover:text-emerald-400 hover:bg-emerald-400/10")} title={user.isActive ? "Suspend User" : "Unsuspend User"}>
+                          <ShieldAlert size={16} className={user.isActive ? "" : "text-red-400"} />
                         </button>
                       </div>
                     </td>
@@ -246,7 +245,6 @@ export default function AdminUsersPage() {
                   >
                     <option value="STUDENT">Student</option>
                     <option value="ITSA_MEMBER">ITSA Member</option>
-                    <option value="EVENT_COORDINATOR">Event Coordinator</option>
                     {currentUser?.role === 'SUPER_ADMIN' && (
                       <option value="ADMIN">Admin</option>
                     )}
@@ -375,12 +373,13 @@ export default function AdminUsersPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="glass-card w-full max-w-md rounded-2xl border border-white/10 shadow-2xl relative z-10 p-6 text-center"
             >
-              <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle size={32} className="text-red-400" />
+              <div className={cn("w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4", modalState.user.isActive ? "bg-red-500/20 text-red-400" : "bg-emerald-500/20 text-emerald-400")}>
+                <AlertTriangle size={32} />
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Suspend User</h2>
+              <h2 className="text-xl font-bold text-white mb-2">{modalState.user.isActive ? 'Suspend User' : 'Unsuspend User'}</h2>
               <p className="text-muted-foreground mb-6">
-                Are you sure you want to suspend <span className="font-semibold text-white">{modalState.user.firstName} {modalState.user.lastName}</span>? They will lose access to their account immediately.
+                Are you sure you want to {modalState.user.isActive ? 'suspend' : 'unsuspend'} <span className="font-semibold text-white">{modalState.user.firstName} {modalState.user.lastName}</span>? 
+                {modalState.user.isActive ? ' They will lose access to their account immediately.' : ' They will regain access to their account.'}
               </p>
               <div className="flex items-center justify-center gap-3">
                 <button
@@ -392,9 +391,9 @@ export default function AdminUsersPage() {
                 <button
                   onClick={() => suspendMutation.mutate(modalState.user.id)}
                   disabled={suspendMutation.isPending}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-red-600/20 disabled:opacity-70 btn-glow"
+                  className={cn("flex items-center gap-2 px-6 py-2.5 text-white rounded-xl font-medium transition-colors shadow-lg disabled:opacity-70 btn-glow", modalState.user.isActive ? "bg-red-600 hover:bg-red-500 shadow-red-600/20" : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20")}
                 >
-                  {suspendMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : 'Yes, Suspend User'}
+                  {suspendMutation.isPending ? <Loader2 size={18} className="animate-spin" /> : (modalState.user.isActive ? 'Yes, Suspend User' : 'Yes, Unsuspend User')}
                 </button>
               </div>
             </motion.div>

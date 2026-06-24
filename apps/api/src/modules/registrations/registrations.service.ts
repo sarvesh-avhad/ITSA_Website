@@ -84,10 +84,11 @@ class RegistrationsService {
 
     await invalidateCacheByPrefix('events');
     await createAuditLog(req, {
-      action: 'CREATE',
+      action: 'REGISTRATION_CREATED',
+      severity: 'INFO',
       resource: 'Registration',
       resourceId: registration.id,
-      newData: { eventId: data.eventId, userId },
+      newValue: { eventId: data.eventId, userId },
     });
 
     return { ...registration, qrCodeDataUrl };
@@ -216,10 +217,11 @@ class RegistrationsService {
 
     await invalidateCacheByPrefix('events');
     await createAuditLog(req, {
-      action: 'CREATE',
+      action: 'TEAM_REGISTRATION_CREATED',
+      severity: 'INFO',
       resource: 'Team Registration',
       resourceId: result.team.id,
-      newData: { teamName: data.teamName, eventId: data.eventId, memberCount: totalSize },
+      newValue: { teamName: data.teamName, eventId: data.eventId, memberCount: totalSize },
     });
 
     return result;
@@ -268,7 +270,8 @@ class RegistrationsService {
 
     await invalidateCacheByPrefix('events');
     await createAuditLog(req, {
-      action: 'DELETE',
+      action: 'REGISTRATION_CANCELLED',
+      severity: 'WARNING',
       resource: 'Registration',
       resourceId: id,
     });
@@ -288,11 +291,12 @@ class RegistrationsService {
     });
 
     await createAuditLog(req, {
-      action: status === 'APPROVED' ? 'APPROVE' : 'REJECT',
+      action: status === 'APPROVED' ? 'REGISTRATION_APPROVED' : 'REGISTRATION_REJECTED',
+      severity: 'INFO',
       resource: 'Registration',
       resourceId: regId,
-      oldData: { status: registration.status },
-      newData: { status },
+      oldValue: { status: registration.status },
+      newValue: { status },
     });
 
     return updated;
@@ -314,13 +318,6 @@ class RegistrationsService {
     
     const where: any = {};
     
-    if (user.role === 'EVENT_COORDINATOR') {
-      where.event = {
-        coordinators: {
-          some: { id: user.userId }
-        }
-      };
-    }
     if (search) {
       where.OR = [
         { teamName: { contains: search, mode: 'insensitive' } },
@@ -396,9 +393,11 @@ class RegistrationsService {
     });
 
     await createAuditLog(req, {
-      action: 'UPDATE',
+      action: 'REGISTRATION_UPDATED',
+      severity: 'INFO',
       resource: 'Registration',
       resourceId: registration.id,
+      newValue: { attendanceMarked: true },
     });
 
     return updated;

@@ -95,11 +95,13 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
     });
 
     await createAuditLog(req, {
-      action: 'UPDATE',
+      action: 'ROLE_CHANGED',
+      severity: 'WARNING',
       resource: 'User',
       resourceId: updatedUser.id,
-      oldData: { role: user.role },
-      newData: { role },
+      targetUserId: updatedUser.id,
+      oldValue: { role: user.role },
+      newValue: { role },
     });
 
     res.json({ success: true, data: updatedUser });
@@ -125,12 +127,29 @@ router.patch('/:id/permissions', authenticate, requireRole('ADMIN'), async (req,
       select: { id: true, email: true, permissions: true },
     });
 
-    await createAuditLog(req, {
-      action: 'UPDATE',
-      resource: 'User',
-      resourceId: updatedUser.id,
-      newData: { permissions },
-    });
+    const added = permissions.filter((p: string) => !user.permissions.includes(p));
+    const removed = user.permissions.filter((p: string) => !permissions.includes(p));
+
+    if (added.length > 0) {
+      await createAuditLog(req, {
+        action: 'PERMISSION_GRANTED',
+        severity: 'WARNING',
+        resource: 'User',
+        resourceId: updatedUser.id,
+        targetUserId: updatedUser.id,
+        newValue: { granted: added },
+      });
+    }
+    if (removed.length > 0) {
+      await createAuditLog(req, {
+        action: 'PERMISSION_REVOKED',
+        severity: 'WARNING',
+        resource: 'User',
+        resourceId: updatedUser.id,
+        targetUserId: updatedUser.id,
+        oldValue: { revoked: removed },
+      });
+    }
 
     res.json({ success: true, data: updatedUser });
   } catch (err) { next(err); }
@@ -154,9 +173,11 @@ router.post('/:id/suspend', authenticate, requireRole('ADMIN'), async (req, res,
     });
 
     await createAuditLog(req, {
-      action: updatedUser.isActive ? 'UPDATE' : 'DELETE', // Using DELETE as suspend for audit
+      action: updatedUser.isActive ? 'USER_REACTIVATED' : 'USER_SUSPENDED',
+      severity: 'WARNING',
       resource: 'User',
       resourceId: updatedUser.id,
+      targetUserId: updatedUser.id,
     });
 
     res.json({ success: true, data: updatedUser });

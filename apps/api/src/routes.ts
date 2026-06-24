@@ -13,6 +13,7 @@ import usersRoutes from '@/modules/users/users.routes';
 import { prisma } from '@/lib/prisma';
 import { redis } from '@/lib/redis';
 import uploadRoutes from '@/modules/upload/upload.routes';
+import auditRoutes from '@/modules/audit/audit.routes';
 
 export const apiRouter = Router();
 
@@ -78,4 +79,5 @@ apiRouter.use('/cms', cmsRoutes);
 apiRouter.use('/contact', contactRoutes);
 apiRouter.use('/upload', uploadRoutes);
 apiRouter.use('/admin/users', usersRoutes);
+apiRouter.use('/admin/audit-logs', auditRoutes);
 
