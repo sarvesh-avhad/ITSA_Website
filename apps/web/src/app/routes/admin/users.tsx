@@ -298,7 +298,7 @@ export default function AdminUsersPage() {
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {Object.entries(
                   Object.entries(PERMISSIONS).reduce((acc: any, [key, value]) => {
-                    const isRestricted = RESTRICTED_PERMISSIONS.includes(value);
+                    const isRestricted = (RESTRICTED_PERMISSIONS as string[]).includes(value as string);
                     const category = isRestricted ? 'Restricted Permissions' : 'Normal Permissions';
                     if (!acc[category]) acc[category] = [];
                     acc[category].push({ key, value });
@@ -311,7 +311,7 @@ export default function AdminUsersPage() {
                       {perms.map((p: any) => {
                         const targetUserRole = permissionDrawer.user.role as UserRole;
                         const isInherited = targetUserRole === 'SUPER_ADMIN' || (ROLE_BASE_PERMISSIONS[targetUserRole] || []).includes(p.value);
-                        const isRestricted = RESTRICTED_PERMISSIONS.includes(p.value);
+                        const isRestricted = (RESTRICTED_PERMISSIONS as string[]).includes(p.value as string);
                         const isLockedRestricted = isRestricted && currentUser?.role !== 'SUPER_ADMIN';
                         const isDisabled = isInherited || isLockedRestricted;
                         const isChecked = isInherited || selectedPermissions.includes(p.value);
