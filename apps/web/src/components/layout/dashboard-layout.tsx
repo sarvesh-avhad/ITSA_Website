@@ -11,7 +11,7 @@ import {
   X,
   User as UserIcon
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getDisplayName, getInitials } from '@/lib/utils';
 import { HelmetProvider } from 'react-helmet-async';
 
 const sidebarLinks = [
@@ -89,16 +89,16 @@ export function DashboardLayout() {
             <div className="glass-card rounded-xl p-3 mb-3 flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center shrink-0 border border-violet-500/20 overflow-hidden">
                 {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.firstName} className="w-full h-full object-cover" />
+                  <img src={user.avatarUrl} alt={getDisplayName(user)} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-violet-400 font-bold text-xs">
-                    {user.firstName[0]}{user.lastName?.[0]}
+                    {getInitials(user.firstName || '', user.lastName || '')}
                   </span>
                 )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold text-white truncate">
-                  {user.firstName} {user.lastName}
+                  {getDisplayName(user)}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">{user.email}</div>
               </div>

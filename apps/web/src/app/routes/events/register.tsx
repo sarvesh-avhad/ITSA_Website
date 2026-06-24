@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { getDisplayName, getInitials } from '@/lib/utils';
 import apiClient from '@/lib/api-client';
 import { individualRegistrationSchema, teamRegistrationSchema } from '@itsa/shared';
 import { Loader2, ArrowLeft, Users, User, CheckCircle2, AlertTriangle, X } from 'lucide-react';
@@ -151,10 +152,10 @@ export default function EventRegistrationPage() {
                 <h3 className="text-sm font-medium text-white mb-4">Team Leader (You)</h3>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-violet-600/20 flex items-center justify-center font-bold text-violet-400">
-                    {user?.firstName?.[0]}
+                    {getInitials(user?.firstName || '', user?.lastName || '')}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-white">{user?.firstName} {user?.lastName}</div>
+                    <div className="text-sm font-medium text-white">{getDisplayName(user)}</div>
                     <div className="text-xs text-muted-foreground">{user?.email}</div>
                   </div>
                 </div>
@@ -251,10 +252,10 @@ export default function EventRegistrationPage() {
                 <h3 className="text-sm font-medium text-white mb-4">Participant Details</h3>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-violet-600/20 flex items-center justify-center font-bold text-violet-400">
-                    {user?.firstName?.[0]}
+                    {getInitials(user?.firstName || '', user?.lastName || '')}
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-white">{user?.firstName} {user?.lastName}</div>
+                    <div className="text-sm font-medium text-white">{getDisplayName(user)}</div>
                     <div className="text-xs text-muted-foreground">{user?.email}</div>
                   </div>
                 </div>

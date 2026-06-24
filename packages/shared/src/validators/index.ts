@@ -10,7 +10,7 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
-export const registerSchema = z.object({
+export const baseRegisterSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z
     .string()
@@ -20,12 +20,32 @@ export const registerSchema = z.object({
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
     .regex(/[0-9]/, 'Password must contain at least one number')
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
-  firstName: z.string().min(1, 'First name is required').max(100),
-  lastName: z.string().min(1, 'Last name is required').max(100),
-  phone: z.string().regex(/^[+]?[\d\s-]{10,15}$/, 'Invalid phone number').optional(),
-  prn: z.string().min(1).max(50).optional(),
-  branch: z.string().min(1).max(100).optional(),
-  year: z.number().int().min(1).max(4).optional(),
+  firstName: z.string().min(2, 'First name is required').max(100),
+  lastName: z.string().max(100).optional(),
+  phone: z.union([z.string().regex(/^[+]?[\d\s-]{10,15}$/, 'Invalid phone number'), z.literal('')]).optional(),
+  prn: z.string().max(50).optional(),
+  branch: z.string().min(1, 'Branch is required').max(100),
+  customBranch: z.string().max(100).optional(),
+  year: z.string().min(1, 'Year is required'),
+  college: z.string().min(1, 'College is required').max(150),
+  customCollege: z.string().max(150).optional(),
+});
+
+export const registerSchema = baseRegisterSchema.superRefine((data, ctx) => {
+  if (data.college === 'Other' && (!data.customCollege || data.customCollege.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Custom college name is required when Other is selected',
+      path: ['customCollege'],
+    });
+  }
+  if (data.branch === 'Other' && (!data.customBranch || data.customBranch.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Custom branch name is required when Other is selected',
+      path: ['customBranch'],
+    });
+  }
 });
 
 export const forgotPasswordSchema = z.object({
@@ -45,13 +65,31 @@ export const resetPasswordSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
-  firstName: z.string().min(1).max(100).optional(),
-  lastName: z.string().min(1).max(100).optional(),
-  phone: z.string().regex(/^[+]?[\d\s-]{10,15}$/).optional(),
-  prn: z.string().min(1).max(50).optional(),
+  firstName: z.string().min(2).max(100).optional(),
+  lastName: z.string().max(100).optional(),
+  phone: z.union([z.string().regex(/^[+]?[\d\s-]{10,15}$/), z.literal('')]).optional(),
+  prn: z.string().max(50).optional(),
   branch: z.string().min(1).max(100).optional(),
-  year: z.number().int().min(1).max(4).optional(),
+  customBranch: z.string().max(100).optional(),
+  year: z.string().min(1).optional(),
+  college: z.string().min(1).max(150).optional(),
+  customCollege: z.string().max(150).optional(),
   avatarUrl: z.string().url().optional(),
+}).superRefine((data, ctx) => {
+  if (data.college === 'Other' && (!data.customCollege || data.customCollege.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Custom college name is required when Other is selected',
+      path: ['customCollege'],
+    });
+  }
+  if (data.branch === 'Other' && (!data.customBranch || data.customBranch.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Custom branch name is required when Other is selected',
+      path: ['customBranch'],
+    });
+  }
 });
 
 // ============================================================

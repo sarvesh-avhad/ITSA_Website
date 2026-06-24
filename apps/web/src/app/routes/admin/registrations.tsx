@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { QRScanner } from '@/components/admin/qr-scanner';
 import { ExportButton } from '@/components/ui/ExportButton';
+import { getDisplayName, getInitials } from '@/lib/utils';
 
 const fetchRegistrations = async (page: number, search: string) => {
   const { data } = await apiClient.get(`/registrations?page=${page}&limit=10&search=${search}`);
@@ -61,7 +62,7 @@ export default function AdminRegistrationsPage() {
     },
     onSuccess: (data) => {
       setIsScannerOpen(false);
-      toast.success(`Scanned successfully! Marked ${data.data.user?.firstName || 'Participant'} as attended.`);
+      toast.success(`Scanned successfully! Marked ${getDisplayName(data.data.user)} as attended.`);
       queryClient.invalidateQueries({ queryKey: ['admin-registrations'] });
     },
     onError: (err: any) => {
@@ -168,8 +169,8 @@ export default function AdminRegistrationsPage() {
                 data?.data?.map((reg: any) => (
                   <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedReg(reg)}>
-                      <div className="font-medium text-white hover:text-violet-400 transition-colors">
-                        {reg.team?.name || `${reg.user?.firstName} ${reg.user?.lastName}`}
+                      <div className="font-medium text-white truncate max-w-[200px]">
+                        {reg.team?.name || getDisplayName(reg.user)}
                       </div>
                       <div className="text-xs text-muted-foreground">{reg.team ? 'Team Registration' : (reg.user?.prn || reg.user?.email)}</div>
                     </td>
@@ -293,7 +294,7 @@ export default function AdminRegistrationsPage() {
                       <span className="text-[10px] uppercase tracking-wider bg-violet-500/20 text-violet-300 px-2 py-0.5 rounded-full font-bold">LEADER</span>
                     </div>
                     <div className="grid grid-cols-2 gap-y-2 text-sm">
-                      <div className="text-muted-foreground">Name: <span className="text-white ml-1">{selectedReg.team.leader.firstName} {selectedReg.team.leader.lastName}</span></div>
+                      <div className="text-muted-foreground">Name: <span className="text-white ml-1">{getDisplayName(selectedReg.team.leader)}</span></div>
                       <div className="text-muted-foreground">Email: <span className="text-white ml-1">{selectedReg.team.leader.email}</span></div>
                       <div className="text-muted-foreground">PRN: <span className="text-white ml-1">{selectedReg.team.leader.prn || 'N/A'}</span></div>
                       <div className="text-muted-foreground">Phone: <span className="text-white ml-1">{selectedReg.team.leader.phone || 'N/A'}</span></div>
@@ -328,8 +329,9 @@ export default function AdminRegistrationsPage() {
                     Participant Details
                   </h3>
                   <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-                    <div className="grid grid-cols-2 gap-y-3 text-sm">
-                      <div className="text-muted-foreground">Name: <span className="text-white ml-1">{selectedReg.user.firstName} {selectedReg.user.lastName}</span></div>
+                    <div className="text-white font-medium mb-1">Participant Details</div>
+                    <div className="grid grid-cols-2 gap-y-3 text-sm mt-3">
+                      <div className="text-muted-foreground">Name: <span className="text-white ml-1">{getDisplayName(selectedReg.user)}</span></div>
                       <div className="text-muted-foreground">Email: <span className="text-white ml-1">{selectedReg.user.email}</span></div>
                       <div className="text-muted-foreground">PRN: <span className="text-white ml-1">{selectedReg.user.prn || 'N/A'}</span></div>
                       <div className="text-muted-foreground">Phone: <span className="text-white ml-1">{selectedReg.user.phone || 'N/A'}</span></div>

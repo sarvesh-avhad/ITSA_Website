@@ -44,7 +44,17 @@ export function truncate(str: string, maxLength: number): string {
 }
 
 export function getInitials(firstName: string, lastName: string): string {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  if (!firstName && !lastName) return 'U';
+  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+}
+
+export function getDisplayName(user: any): string {
+  if (!user) return 'User';
+  if (user.firstName && user.lastName) {
+    return `${user.firstName} ${user.lastName}`;
+  }
+  if (user.firstName) return user.firstName;
+  return user.email || 'User';
 }
 
 export function slugify(text: string): string {

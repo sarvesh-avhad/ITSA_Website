@@ -9,14 +9,16 @@ import { Loader2, User as UserIcon, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '@/components/seo';
 
-// We reuse the updateProfileSchema structure but make it flexible for the frontend
 const settingsSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  lastName: z.string().min(1, 'Last name is required'),
   phone: z.string().optional().nullable(),
   prn: z.string().optional().nullable(),
   branch: z.string().optional().nullable(),
-  year: z.coerce.number().min(1).max(4).optional().nullable(),
+  customBranch: z.string().optional().nullable(),
+  year: z.string().optional().nullable(),
+  college: z.string().optional().nullable(),
+  customCollege: z.string().optional().nullable(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -29,6 +31,7 @@ export default function StudentSettingsPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -38,9 +41,15 @@ export default function StudentSettingsPage() {
       phone: user?.phone || '',
       prn: user?.prn || '',
       branch: user?.branch || '',
-      year: user?.year || null,
+      customBranch: user?.customBranch || '',
+      year: user?.year || '',
+      college: user?.college || '',
+      customCollege: user?.customCollege || '',
     },
   });
+
+  const watchCollege = watch('college');
+  const watchBranch = watch('branch');
 
   const updateMutation = useMutation({
     mutationFn: async (data: SettingsFormValues) => {
@@ -158,7 +167,7 @@ export default function StudentSettingsPage() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Last Name <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-white">Last Name <span className="text-muted-foreground text-xs font-normal ml-1">(Optional)</span></label>
                 <input
                   {...register('lastName')}
                   className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
@@ -195,6 +204,21 @@ export default function StudentSettingsPage() {
 
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-2">
+                <label className="text-sm font-medium text-white">Year of Study</label>
+                <select
+                  {...register('year')}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none [&>option]:bg-[#0f0a1c]"
+                >
+                  <option value="" disabled>Select Year</option>
+                  <option value="FE">First Year (FE)</option>
+                  <option value="SE">Second Year (SE)</option>
+                  <option value="TE">Third Year (TE)</option>
+                  <option value="BE">Fourth Year (BE)</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-white">PRN Number</label>
                 <input
                   {...register('prn')}
@@ -202,29 +226,62 @@ export default function StudentSettingsPage() {
                   className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 uppercase"
                 />
               </div>
-              
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Year of Study</label>
+                <label className="text-sm font-medium text-white">College</label>
                 <select
-                  {...register('year', { valueAsNumber: true })}
-                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none"
+                  {...register('college')}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none [&>option]:bg-[#0f0a1c]"
                 >
-                  <option value="">Select Year</option>
-                  <option value="1">First Year</option>
-                  <option value="2">Second Year</option>
-                  <option value="3">Third Year</option>
-                  <option value="4">Final Year</option>
+                  <option value="" disabled>Select College</option>
+                  <option value="Dr. D. Y. Patil Institute of Technology, Pimpri">Dr. D. Y. Patil Institute of Technology, Pimpri</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
 
-              <div className="space-y-2 sm:col-span-2">
+              {watchCollege === 'Other' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white">Custom College Name <span className="text-red-500">*</span></label>
+                  <input
+                    {...register('customCollege')}
+                    placeholder="Enter your college name"
+                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-white">Branch / Department</label>
-                <input
+                <select
                   {...register('branch')}
-                  placeholder="e.g. Information Technology"
-                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                />
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none [&>option]:bg-[#0f0a1c]"
+                >
+                  <option value="" disabled>Select Branch</option>
+                  <option value="Information Technology (IT)">Information Technology (IT)</option>
+                  <option value="Computer Engineering (COMP)">Computer Engineering (COMP)</option>
+                  <option value="Artificial Intelligence & Data Science (AI&DS)">Artificial Intelligence & Data Science (AI&DS)</option>
+                  <option value="Electronics & Telecommunication (ENTC)">Electronics & Telecommunication (ENTC)</option>
+                  <option value="Mechanical Engineering">Mechanical Engineering</option>
+                  <option value="Civil Engineering">Civil Engineering</option>
+                  <option value="Instrumentation Engineering">Instrumentation Engineering</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
+
+              {watchBranch === 'Other' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white">Custom Branch Name <span className="text-red-500">*</span></label>
+                  <input
+                    {...register('customBranch')}
+                    placeholder="Enter your branch name"
+                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="pt-6 flex justify-end gap-4">

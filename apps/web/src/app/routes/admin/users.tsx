@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { Search, Loader2, ShieldAlert, X, AlertTriangle, UserCog, Key } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getDisplayName, getInitials } from '@/lib/utils';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -159,9 +159,9 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-violet-600/20 text-violet-400 flex items-center justify-center font-bold">
-                          {user.firstName?.charAt(0).toUpperCase() || 'U'}
+                          {getInitials(user.firstName || '', user.lastName || '')}
                         </div>
-                        <div className="font-medium text-white">{user.firstName} {user.lastName}</div>
+                        <div className="font-medium text-white">{getDisplayName(user)}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{user.email}</td>
@@ -237,7 +237,7 @@ export default function AdminUsersPage() {
               </div>
               <div className="p-6">
                 <p className="text-muted-foreground mb-4">
-                  Update role for <span className="text-white font-medium">{modalState.user.firstName} {modalState.user.lastName}</span> ({modalState.user.email}).
+                  Update role for <span className="text-white font-medium">{getDisplayName(modalState.user)}</span> ({modalState.user.email}).
                 </p>
                 <div className="space-y-4">
                   <select
@@ -380,8 +380,8 @@ export default function AdminUsersPage() {
               </div>
               <h2 className="text-xl font-bold text-white mb-2">{modalState.user.isActive ? 'Suspend User' : 'Unsuspend User'}</h2>
               <p className="text-muted-foreground mb-6">
-                Are you sure you want to {modalState.user.isActive ? 'suspend' : 'unsuspend'} <span className="font-semibold text-white">{modalState.user.firstName} {modalState.user.lastName}</span>? 
-                {modalState.user.isActive ? ' They will lose access to their account immediately.' : ' They will regain access to their account.'}
+                Are you sure you want to {modalState.user.isActive ? 'suspend' : 'unsuspend'} <span className="font-semibold text-white">{getDisplayName(modalState.user)}</span>? 
+                {modalState.user.isActive && " They will no longer be able to log in or access the platform."}
               </p>
               <div className="flex items-center justify-center gap-3">
                 <button

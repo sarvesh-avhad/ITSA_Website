@@ -89,7 +89,10 @@ model User {
   phone           String?
   prn             String?   @unique
   branch          String?
-  year            Int?
+  customBranch    String?
+  year            String?
+  college         String?
+  customCollege   String?
   avatarUrl       String?
   googleId        String?   @unique
   role            UserRole  @default(GUEST)

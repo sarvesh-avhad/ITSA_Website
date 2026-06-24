@@ -14,8 +14,11 @@ export interface RegisterRequest {
   lastName: string;
   phone?: string;
   prn?: string;
-  branch?: string;
-  year?: number;
+  branch: string;
+  customBranch?: string;
+  year: string;
+  college: string;
+  customCollege?: string;
 }
 
 export interface GoogleAuthRequest {
@@ -39,7 +42,10 @@ export interface AuthUser {
   phone?: string | null;
   prn?: string | null;
   branch?: string | null;
-  year?: number | null;
+  customBranch?: string | null;
+  year?: string | null;
+  college?: string | null;
+  customCollege?: string | null;
   permissions: string[];
 }
 
@@ -80,7 +86,10 @@ export interface User {
   phone: string | null;
   prn: string | null;
   branch: string | null;
-  year: number | null;
+  customBranch: string | null;
+  year: string | null;
+  college: string | null;
+  customCollege: string | null;
   avatarUrl: string | null;
   role: UserRole;
   isActive: boolean;
@@ -97,7 +106,7 @@ export interface UserListItem {
   lastName: string;
   prn: string | null;
   branch: string | null;
-  year: number | null;
+  year: string | null;
   role: UserRole;
   isActive: boolean;
   createdAt: string;
@@ -109,7 +118,10 @@ export interface UpdateProfileRequest {
   phone?: string;
   prn?: string;
   branch?: string;
-  year?: number;
+  customBranch?: string;
+  year?: string;
+  college?: string;
+  customCollege?: string;
   avatarUrl?: string;
 }
 

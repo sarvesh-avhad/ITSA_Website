@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Calendar, Image as ImageIcon, FileText, Settings, Award, LogOut, Menu, X, Home, Mail, Megaphone, Star, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { PERMISSIONS } from '@itsa/shared';
-import { cn } from '@/lib/utils';
+import { cn, getDisplayName, getInitials } from '@/lib/utils';
 import { useState } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { SEO } from '@/components/seo';
@@ -116,14 +116,15 @@ export function AdminLayout() {
             })}
           </div>
 
-          {/* User Profile & Logout */}
           <div className="p-4 border-t border-white/10">
             <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10 mb-2">
               <div className="w-8 h-8 rounded-full bg-violet-600/30 flex items-center justify-center text-violet-400 font-bold shrink-0 uppercase">
-                {((user as any).firstName || 'U').charAt(0)}
+                {getInitials((user as any).firstName || '', (user as any).lastName || '')}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">{((user as any).firstName || '')} {((user as any).lastName || '')}</div>
+                <div className="text-sm font-medium text-white truncate" title={getDisplayName(user)}>
+                  {getDisplayName(user)}
+                </div>
                 <div className="text-[10px] text-violet-400 font-bold tracking-wider truncate">
                   {user.role.replace('_', ' ')}
                 </div>

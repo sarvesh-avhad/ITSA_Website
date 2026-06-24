@@ -1,6 +1,7 @@
 import { useAuthStore } from '@/stores/auth.store';
 import { Mail, GraduationCap, MapPin, Phone, Building } from 'lucide-react';
 import { SEO } from '@/components/seo';
+import { getDisplayName, getInitials } from '@/lib/utils';
 
 export default function StudentDashboardPage() {
   const { user } = useAuthStore();
@@ -22,15 +23,15 @@ export default function StudentDashboardPage() {
           <div className="glass-card rounded-3xl p-8 flex flex-col items-center text-center">
             <div className="w-32 h-32 rounded-full bg-violet-600/20 border-2 border-violet-500/20 mb-6 overflow-hidden flex items-center justify-center relative group">
               {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.firstName} className="w-full h-full object-cover" />
+                <img src={user.avatarUrl} alt={getDisplayName(user)} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-4xl font-bold text-violet-400">
-                  {user.firstName[0]}{user.lastName?.[0]}
+                  {getInitials(user.firstName || '', user.lastName || '')}
                 </span>
               )}
             </div>
             <h2 className="text-2xl font-bold text-white">
-              {user.firstName} {user.lastName}
+              {getDisplayName(user)}
             </h2>
             <p className="text-violet-400 font-medium mt-1">{user.role}</p>
             
