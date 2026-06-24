@@ -128,38 +128,37 @@ class RegistrationsService {
     const allEmails = [leader.email.toLowerCase(), ...memberEmails];
     const allPrns = [leader.prn?.toUpperCase(), ...memberPrns].filter(Boolean) as string[];
 
+    const userOrFilters: any[] = [{ email: { in: allEmails } }];
+    if (allPrns.length > 0) {
+      userOrFilters.push({ prn: { in: allPrns } });
+    }
+
     // 1. Check existing Registrations for this event
     const existingRegs = await prisma.registration.findMany({
       where: {
         eventId: data.eventId,
         deletedAt: null,
-        user: {
-          OR: [
-            { email: { in: allEmails } },
-            { prn: { in: allPrns } }
-          ]
-        }
+        user: { OR: userOrFilters }
       },
       include: { user: true }
     });
 
     if (existingRegs.length > 0) {
-      throw new ConflictError('One or more members are already registered as solo participants or leaders for this event');
+      const duplicateUsers = existingRegs.map(reg => reg.user.email).join(', ');
+      throw new ConflictError(`One or more members (${duplicateUsers}) are already registered as solo participants or leaders for this event`);
     }
 
     // 2. Check existing TeamMembers for this event
     const existingTeamMembers = await prisma.teamMember.findMany({
       where: {
         team: { eventId: data.eventId },
-        OR: [
-          { email: { in: allEmails } },
-          { prn: { in: allPrns } }
-        ]
+        OR: userOrFilters
       }
     });
 
     if (existingTeamMembers.length > 0) {
-      throw new ConflictError('One or more members are already part of another team for this event');
+      const duplicateMembers = existingTeamMembers.map(tm => tm.email).join(', ');
+      throw new ConflictError(`One or more members (${duplicateMembers}) are already part of another team for this event`);
     }
 
     const qrId = `ITSA-T-${nanoid(10)}`;
