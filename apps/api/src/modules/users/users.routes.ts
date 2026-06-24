@@ -84,6 +84,14 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
       }
     }
 
+    // Rule 3: Prevent demoting the last SUPER_ADMIN
+    if (user.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN') {
+      const superAdminCount = await prisma.user.count({ where: { role: 'SUPER_ADMIN' } });
+      if (superAdminCount <= 1) {
+        return res.status(400).json({ success: false, error: { message: 'Cannot demote the last Super Admin. Please assign another Super Admin first.' } });
+      }
+    }
+
     // Clear specific permissions array on any role change to guarantee instant revocation
     const updatedUser = await prisma.user.update({
       where: { id: req.params.id as string },
