@@ -40,7 +40,16 @@ export function AdminLayout() {
 
   return (
     <HelmetProvider>
-      <div className="min-h-screen bg-background flex">
+      <div className="min-h-screen bg-black flex relative">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 w-full h-full object-cover z-0 opacity-15 pointer-events-none mix-blend-screen"
+        >
+          <source src="/bg_video.mp4" type="video/mp4" />
+        </video>
         <SEO title="Admin Dashboard" />
         
         {/* Mobile Overlay */}
