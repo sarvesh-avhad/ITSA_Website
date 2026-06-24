@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./apps/web/public/logo.png" alt="ITSA Logo" width="120" />
+  <img src="./apps/web/public/ITSA_logo.png" alt="ITSA Logo" width="120" />
   <h1>ITSA Platform</h1>
   <p>The official web platform for the Information Technology Students' Association (ITSA). An integrated portal for event registrations, announcements, media gallery, and administrative management.</p>
 
