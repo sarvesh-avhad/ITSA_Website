@@ -8,7 +8,7 @@ export class EventsController {
     if (req.originalUrl.includes('/admin')) {
       (filters as any).isAdmin = true;
       (filters as any).userRole = req.user?.role;
-      (filters as any).userId = req.user?.userId || req.user?.id;
+      (filters as any).userId = req.user?.userId;
     }
     const result = await eventsService.list(filters);
     res.json({ success: true, data: result.data, meta: result.meta });

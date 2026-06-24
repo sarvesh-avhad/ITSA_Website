@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import apiClient from '@/lib/api-client';
 import { individualRegistrationSchema, teamRegistrationSchema } from '@itsa/shared';
-import { Loader2, ArrowLeft, Users, User, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Users, User, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
 const fetchEventDetail = async (slug: string) => {

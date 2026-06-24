@@ -66,7 +66,7 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
     const currentAdminRole = req.user!.role;
     
     // Check if user exists
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    const user = await prisma.user.findUnique({ where: { id: req.params.id as string } });
     if (!user) throw new NotFoundError('User');
 
     // Rule 1: SUPER_ADMIN cannot be modified by anyone except themselves or another SUPER_ADMIN
@@ -86,7 +86,7 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
 
     // Clear specific permissions array on any role change to guarantee instant revocation
     const updatedUser = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { 
         role,
         ...(user.role !== role ? { permissions: [] } : {})
@@ -112,7 +112,7 @@ router.patch('/:id/permissions', authenticate, requireRole('ADMIN'), async (req,
     const { permissions } = req.body; // Expecting array of strings
     const currentAdminRole = req.user!.role;
     
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    const user = await prisma.user.findUnique({ where: { id: req.params.id as string } });
     if (!user) throw new NotFoundError('User');
 
     if (currentAdminRole === 'ADMIN' && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN')) {
@@ -120,7 +120,7 @@ router.patch('/:id/permissions', authenticate, requireRole('ADMIN'), async (req,
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { permissions },
       select: { id: true, email: true, permissions: true },
     });
@@ -139,7 +139,7 @@ router.patch('/:id/permissions', authenticate, requireRole('ADMIN'), async (req,
 // POST suspend/unsuspend user
 router.post('/:id/suspend', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    const user = await prisma.user.findUnique({ where: { id: req.params.id as string } });
     if (!user) throw new NotFoundError('User');
 
     // Prevent suspending SUPER_ADMIN
@@ -148,7 +148,7 @@ router.post('/:id/suspend', authenticate, requireRole('ADMIN'), async (req, res,
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { isActive: !user.isActive },
       select: { id: true, isActive: true },
     });

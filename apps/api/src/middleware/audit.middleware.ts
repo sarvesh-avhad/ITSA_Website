@@ -1,10 +1,10 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
-import type { AuditAction } from '@itsa/shared';
+import { AuditAction } from '@prisma/client';
 
 interface AuditLogData {
-  action: AuditAction;
+  action: AuditAction | string;
   resource: string;
   resourceId?: string;
   oldData?: unknown;
@@ -23,7 +23,7 @@ export async function createAuditLog(
     await prisma.auditLog.create({
       data: {
         userId: req.user?.userId || null,
-        action: data.action,
+        action: data.action as AuditAction,
         resource: data.resource,
         resourceId: data.resourceId || null,
         oldData: data.oldData ? (data.oldData as object) : undefined,

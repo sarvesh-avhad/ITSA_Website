@@ -193,6 +193,10 @@ export const createAnnouncementSchema = z.object({
 
 export const updateAnnouncementSchema = createAnnouncementSchema.partial();
 
+export type CreateAnnouncementRequest = z.infer<typeof createAnnouncementSchema>;
+export type UpdateAnnouncementRequest = z.infer<typeof updateAnnouncementSchema>;
+export type AnnouncementCategory = 'NOTICE' | 'CLUB_UPDATE' | 'PLACEMENT_DRIVE' | 'WORKSHOP' | 'GENERAL';
+
 // ============================================================
 // Contact Validator
 // ============================================================

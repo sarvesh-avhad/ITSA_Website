@@ -54,10 +54,19 @@ export interface IndividualRegistrationRequest {
   formData?: Record<string, unknown>;
 }
 
+export interface TeamMemberRequest {
+  name: string;
+  email: string;
+  phone: string;
+  prn: string;
+  branch: string;
+  year: string;
+}
+
 export interface TeamRegistrationRequest {
   eventId: string;
   teamName: string;
-  memberEmails: string[]; // Up to 4 member emails
+  members: TeamMemberRequest[];
   formData?: Record<string, unknown>;
 }
 
