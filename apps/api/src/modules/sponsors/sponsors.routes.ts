@@ -67,13 +67,17 @@ router.post('/', authenticate, requireRole('ADMIN'), validate(createSponsorSchem
 // Update sponsor (Admin)
 router.patch('/:id', authenticate, requireRole('ADMIN'), validate(updateSponsorSchema), async (req, res, next) => {
   try {
+    const existing = await prisma.sponsor.findUnique({ where: { id: (req.params.id as string) } });
+    if (!existing) return res.status(404).json({ success: false, error: { message: 'Sponsor not found' } });
     const sponsor = await prisma.sponsor.update({ where: { id: (req.params.id as string) }, data: req.body });
     await invalidateCacheByPrefix('sponsors');
     await createAuditLog(req, { 
       action: 'SPONSOR_UPDATED', 
       severity: 'INFO',
       resource: 'Sponsor', 
-      resourceId: sponsor.id 
+      resourceId: sponsor.id,
+      oldValue: { name: existing.name },
+      newValue: { name: sponsor.name }
     });
     res.json({ success: true, data: sponsor });
   } catch (err) { next(err); }
@@ -82,13 +86,16 @@ router.patch('/:id', authenticate, requireRole('ADMIN'), validate(updateSponsorS
 // Delete sponsor (Admin)
 router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
+    const sponsor = await prisma.sponsor.findUnique({ where: { id: (req.params.id as string) } });
+    if (!sponsor) return res.status(404).json({ success: false, error: { message: 'Sponsor not found' } });
     await prisma.sponsor.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
     await invalidateCacheByPrefix('sponsors');
     await createAuditLog(req, { 
       action: 'SPONSOR_DELETED', 
       severity: 'WARNING',
       resource: 'Sponsor', 
-      resourceId: (req.params.id as string) as string 
+      resourceId: (req.params.id as string) as string,
+      oldValue: { name: sponsor.name }
     });
     res.json({ success: true, data: { message: 'Sponsor deleted' } });
   } catch (err) { next(err); }

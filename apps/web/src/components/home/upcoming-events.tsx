@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin } from 'lucide-react';
+import { Calendar, MapPin, Users } from 'lucide-react';
+import { getRegistrationMode } from '@itsa/shared';
 
 const events = [
   {
@@ -9,7 +10,8 @@ const events = [
     date: 'March 15, 2026',
     venue: 'Main Auditorium',
     image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
-    tags: ['Hackathon', 'Coding']
+    tags: ['Hackathon', 'Coding'],
+    eventType: 'TEAM', minTeamSize: 2, maxTeamSize: 4
   },
   {
     id: 'stackstride',
@@ -17,7 +19,8 @@ const events = [
     date: 'April 05, 2026',
     venue: 'Lab 402',
     image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800',
-    tags: ['Workshop', 'Web']
+    tags: ['Workshop', 'Web'],
+    eventType: 'INDIVIDUAL', minTeamSize: 1, maxTeamSize: 1
   },
   {
     id: 'alumni-nexus',
@@ -25,7 +28,8 @@ const events = [
     date: 'April 20, 2026',
     venue: 'Seminar Hall',
     image: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&q=80&w=800',
-    tags: ['Networking', 'Talk']
+    tags: ['Networking', 'Talk'],
+    eventType: 'INDIVIDUAL', minTeamSize: 1, maxTeamSize: 1
   },
   {
     id: 'tech-talk-series',
@@ -33,7 +37,8 @@ const events = [
     date: 'May 02, 2026',
     venue: 'Virtual',
     image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=800',
-    tags: ['Seminar', 'AI']
+    tags: ['Seminar', 'AI'],
+    eventType: 'INDIVIDUAL', minTeamSize: 1, maxTeamSize: 1
   }
 ];
 
@@ -108,6 +113,14 @@ export function UpcomingEvents() {
                   <div className="flex items-center gap-2">
                     <MapPin size={14} className="text-cyan-400" />
                     <span>{event.venue}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users size={14} className="text-pink-400" />
+                    <span>
+                      {getRegistrationMode(event as any) === 'INDIVIDUAL' && '👤 Individual'}
+                      {getRegistrationMode(event as any) === 'OPTIONAL_TEAM' && `👥 Individual / Team (${event.minTeamSize || 1}–${event.maxTeamSize || 'Unlimited'})`}
+                      {getRegistrationMode(event as any) === 'MANDATORY_TEAM' && `👥 Team (${event.minTeamSize || 2}–${event.maxTeamSize || 'Unlimited'})`}
+                    </span>
                   </div>
                 </div>
 

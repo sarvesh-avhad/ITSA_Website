@@ -3,6 +3,7 @@ import { authenticate, requireRole, requirePermission } from '@/middleware/auth.
 import { validate } from '@/middleware/validate.middleware';
 import { individualRegistrationSchema, teamRegistrationSchema, PERMISSIONS } from '@itsa/shared';
 import { registrationsService } from './registrations.service';
+import { createAuditLog } from '@/middleware/audit.middleware';
 
 const router = Router();
 
@@ -52,6 +53,15 @@ router.get('/export', authenticate, requirePermission(PERMISSIONS.EVENTS_READ), 
       contentType = 'text/csv';
       extension = 'csv';
     }
+
+    await createAuditLog(req, {
+      action: 'REPORT_EXPORTED',
+      severity: 'INFO',
+      resource: 'Registration',
+      resourceId: 'export',
+      targetUserName: 'Registrations Report',
+      newValue: { format, recordsExported: flatData.length },
+    });
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename=all_registrations_export_${new Date().toISOString().split('T')[0]}.${extension}`);

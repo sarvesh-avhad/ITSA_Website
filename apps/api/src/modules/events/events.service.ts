@@ -129,10 +129,23 @@ class EventsService {
     const existing = await prisma.event.findUnique({ where: { slug } });
     if (existing) throw new ConflictError('An event with this title already exists');
 
+    let minTeamSize = data.minTeamSize;
+    let maxTeamSize = data.maxTeamSize;
+
+    if (data.eventType === 'INDIVIDUAL') {
+      minTeamSize = 1;
+      maxTeamSize = 1;
+    } else if (data.eventType === 'TEAM') {
+      minTeamSize = Math.max(1, minTeamSize || 1);
+      maxTeamSize = Math.max(minTeamSize, maxTeamSize || minTeamSize);
+    }
+
     const event = await prisma.event.create({
       data: {
         ...data,
         slug,
+        minTeamSize,
+        maxTeamSize,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline) : null,
@@ -165,6 +178,17 @@ class EventsService {
     if (data.registrationDeadline) updateData.registrationDeadline = new Date(data.registrationDeadline);
     if (data.title) {
       updateData.slug = slugify(data.title, { lower: true, strict: true });
+    }
+
+    const nextEventType = data.eventType || existing.eventType;
+    if (nextEventType === 'INDIVIDUAL') {
+      updateData.minTeamSize = 1;
+      updateData.maxTeamSize = 1;
+    } else if (nextEventType === 'TEAM') {
+      const min = data.minTeamSize !== undefined ? data.minTeamSize : existing.minTeamSize;
+      const max = data.maxTeamSize !== undefined ? data.maxTeamSize : existing.maxTeamSize;
+      updateData.minTeamSize = Math.max(1, min || 1);
+      updateData.maxTeamSize = Math.max(updateData.minTeamSize, max || updateData.minTeamSize);
     }
 
     const event = await prisma.event.update({

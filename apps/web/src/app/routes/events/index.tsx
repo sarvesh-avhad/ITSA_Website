@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { getRegistrationMode } from '@itsa/shared';
 import { Link, useSearchParams } from 'react-router-dom';
 import apiClient from '@/lib/api-client';
 import { Search, Calendar, MapPin, Users, Filter, SlidersHorizontal, ArrowRight } from 'lucide-react';
@@ -276,6 +277,16 @@ export default function EventsListingPage() {
                         </div>
                         <span className="font-medium text-white/80 truncate">
                           {event.venue || 'TBA'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                          <Users size={14} className="text-pink-400" />
+                        </div>
+                        <span className="font-medium text-white/80 truncate">
+                          {getRegistrationMode(event) === 'INDIVIDUAL' && '👤 Individual'}
+                          {getRegistrationMode(event) === 'OPTIONAL_TEAM' && `👥 Individual / Team (${event.minTeamSize || 1}–${event.maxTeamSize || 'Unlimited'})`}
+                          {getRegistrationMode(event) === 'MANDATORY_TEAM' && `👥 Team (${event.minTeamSize || 2}–${event.maxTeamSize || 'Unlimited'})`}
                         </span>
                       </div>
                     </div>

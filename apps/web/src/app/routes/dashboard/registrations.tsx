@@ -1,11 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
-import { QrCode, Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, MapPin, Users, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
+import { toast } from 'sonner';
 
 export default function MyRegistrationsPage() {
+  const queryClient = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ['my-registrations'],
     queryFn: async () => {
@@ -13,6 +16,25 @@ export default function MyRegistrationsPage() {
       return res.data.data;
     },
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/registrations/${id}`);
+    },
+    onSuccess: () => {
+      toast.success('Registration cancelled successfully');
+      queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel registration');
+    }
+  });
+
+  const handleCancel = (id: string) => {
+    if (window.confirm('Are you sure you want to cancel your registration? This action cannot be undone.')) {
+      cancelMutation.mutate(id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -77,6 +99,21 @@ export default function MyRegistrationsPage() {
                       <span>{reg.event.venue || 'TBA'}</span>
                     </div>
                   </div>
+                  
+                  {reg.status !== 'CANCELLED' && 
+                   (!reg.event.registrationDeadline || new Date() < new Date(reg.event.registrationDeadline)) &&
+                   !reg.attendanceMarked && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => handleCancel(reg.id)}
+                        disabled={cancelMutation.isPending}
+                        className="text-xs text-red-400 hover:text-red-300 font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      >
+                        <XCircle size={14} />
+                        {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Registration'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* QR Code Section */}

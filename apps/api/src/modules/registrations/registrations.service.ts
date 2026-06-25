@@ -5,7 +5,7 @@ import { NotFoundError, BadRequestError, ConflictError } from '@/lib/errors';
 import { createAuditLog } from '@/middleware/audit.middleware';
 import { sendEmail, registrationConfirmationEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
-import { PAGINATION, CACHE_TTL } from '@itsa/shared';
+import { PAGINATION, CACHE_TTL, getRegistrationMode } from '@itsa/shared';
 import type { IndividualRegistrationRequest, TeamRegistrationRequest } from '@itsa/shared';
 import QRCode from 'qrcode';
 import { nanoid } from 'nanoid';
@@ -30,10 +30,13 @@ class RegistrationsService {
     const existing = await prisma.registration.findUnique({
       where: { userId_eventId: { userId, eventId: data.eventId } },
     });
-    if (existing) throw new ConflictError('You are already registered for this event');
+    if (existing && existing.status !== 'CANCELLED') {
+      throw new ConflictError('You are already registered for this event');
+    }
 
     // Check event type
-    if (event.eventType === 'TEAM') {
+    const mode = getRegistrationMode(event);
+    if (mode === 'MANDATORY_TEAM') {
       throw new BadRequestError('This event requires team registration');
     }
 
@@ -47,25 +50,50 @@ class RegistrationsService {
 
     // Create registration
     const registration = await prisma.$transaction(async (tx: any) => {
-      const reg = await tx.registration.create({
-        data: {
-          userId,
-          eventId: data.eventId,
-          status: 'APPROVED',
-          qrCode: qrId,
-          formData: data.formData ? (data.formData as object) : undefined,
+      // Safe increment
+      const updatedEvent = await tx.event.updateMany({
+        where: { 
+          id: data.eventId,
+          ...(event.maxParticipants ? { currentCount: { lt: event.maxParticipants } } : {})
         },
-        include: {
-          user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, branch: true, year: true, phone: true } },
-          event: { select: { id: true, title: true, slug: true, startDate: true, endDate: true, venue: true, posterUrl: true } },
-        },
-      });
-
-      // Increment event count
-      await tx.event.update({
-        where: { id: data.eventId },
         data: { currentCount: { increment: 1 } },
       });
+
+      if (updatedEvent.count === 0 && event.maxParticipants) {
+        throw new BadRequestError('Event is at full capacity');
+      }
+
+      let reg;
+      if (existing) {
+        reg = await tx.registration.update({
+          where: { id: existing.id },
+          data: {
+            status: 'APPROVED',
+            teamId: null,
+            deletedAt: null,
+            qrCode: existing.qrCode || qrId,
+            formData: data.formData ? (data.formData as object) : undefined,
+          },
+          include: {
+            user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, branch: true, year: true, phone: true } },
+            event: { select: { id: true, title: true, slug: true, startDate: true, endDate: true, venue: true, posterUrl: true } },
+          },
+        });
+      } else {
+        reg = await tx.registration.create({
+          data: {
+            userId,
+            eventId: data.eventId,
+            status: 'APPROVED',
+            qrCode: qrId,
+            formData: data.formData ? (data.formData as object) : undefined,
+          },
+          include: {
+            user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, branch: true, year: true, phone: true } },
+            event: { select: { id: true, title: true, slug: true, startDate: true, endDate: true, venue: true, posterUrl: true } },
+          },
+        });
+      }
 
       return reg;
     });
@@ -88,7 +116,7 @@ class RegistrationsService {
       severity: 'INFO',
       resource: 'Registration',
       resourceId: registration.id,
-      newValue: { eventId: data.eventId, userId },
+      newValue: { eventId: data.eventId, userId, eventName: registration.event.title, studentName: `${registration.user.firstName} ${registration.user.lastName || ''}`.trim() },
     });
 
     return { ...registration, qrCodeDataUrl };
@@ -99,7 +127,8 @@ class RegistrationsService {
     if (!event) throw new NotFoundError('Event');
     if (!event.isPublished) throw new BadRequestError('Event is not open for registration');
 
-    if (event.eventType === 'INDIVIDUAL') {
+    const mode = getRegistrationMode(event);
+    if (mode === 'INDIVIDUAL') {
       throw new BadRequestError('This event only supports individual registration');
     }
 
@@ -189,27 +218,56 @@ class RegistrationsService {
         data: teamMembersToCreate
       });
 
-      // Create Registration only for the team leader
-      const registration = await tx.registration.create({
-        data: {
-          userId,
-          eventId: data.eventId,
-          teamId: team.id,
-          status: 'APPROVED',
-          qrCode: qrId,
-          formData: data.formData ? (data.formData as object) : undefined,
-        },
-        include: {
-          event: { select: { id: true, title: true, startDate: true, venue: true } },
-          user: { select: { id: true, firstName: true, email: true } },
-        }
+      // Create or Update Registration only for the team leader
+      const existingLeaderReg = await tx.registration.findUnique({
+        where: { userId_eventId: { userId, eventId: data.eventId } }
       });
 
-      // Update event count
-      await tx.event.update({
-        where: { id: data.eventId },
+      let registration;
+      if (existingLeaderReg) {
+        registration = await tx.registration.update({
+          where: { id: existingLeaderReg.id },
+          data: {
+            teamId: team.id,
+            status: 'APPROVED',
+            qrCode: existingLeaderReg.qrCode || qrId,
+            deletedAt: null,
+            formData: data.formData ? (data.formData as object) : undefined,
+          },
+          include: {
+            event: { select: { id: true, title: true, startDate: true, venue: true } },
+            user: { select: { id: true, firstName: true, email: true } },
+          }
+        });
+      } else {
+        registration = await tx.registration.create({
+          data: {
+            userId,
+            eventId: data.eventId,
+            teamId: team.id,
+            status: 'APPROVED',
+            qrCode: qrId,
+            formData: data.formData ? (data.formData as object) : undefined,
+          },
+          include: {
+            event: { select: { id: true, title: true, startDate: true, venue: true } },
+            user: { select: { id: true, firstName: true, email: true } },
+          }
+        });
+      }
+
+      // Safe capacity update
+      const updatedEvent = await tx.event.updateMany({
+        where: { 
+          id: data.eventId,
+          ...(event.maxParticipants ? { currentCount: { lte: event.maxParticipants - totalSize } } : {})
+        },
         data: { currentCount: { increment: totalSize } },
       });
+
+      if (updatedEvent.count === 0 && event.maxParticipants) {
+        throw new BadRequestError(`Event does not have enough capacity for ${totalSize} members`);
+      }
 
       return { team, registration, qrCodeDataUrl: qrId };
     });
@@ -220,7 +278,7 @@ class RegistrationsService {
       severity: 'INFO',
       resource: 'Team Registration',
       resourceId: result.team.id,
-      newValue: { teamName: data.teamName, eventId: data.eventId, memberCount: totalSize },
+      newValue: { teamName: data.teamName, eventId: data.eventId, memberCount: totalSize, eventName: result.registration.event.title, studentName: result.registration.user.firstName },
     });
 
     return result;
@@ -245,7 +303,11 @@ class RegistrationsService {
   async cancelRegistration(id: string, userId: string, req: Request) {
     const registration = await prisma.registration.findUnique({
       where: { id },
-      include: { event: true },
+      include: { 
+        event: true, 
+        team: { include: { members: true } },
+        user: { select: { firstName: true, lastName: true } }
+      },
     });
 
     if (!registration || registration.userId !== userId) {
@@ -256,16 +318,37 @@ class RegistrationsService {
       throw new BadRequestError('Registration is already cancelled');
     }
 
-    await prisma.$transaction([
-      prisma.registration.update({
+    if (registration.attendanceMarked) {
+      throw new BadRequestError('Cannot cancel registration after attendance has been marked');
+    }
+
+    if (registration.event.registrationDeadline && new Date() > registration.event.registrationDeadline) {
+      throw new BadRequestError('Cannot cancel registration after the registration deadline');
+    }
+
+    const isTeam = !!registration.team;
+    const decrementAmount = isTeam ? (registration.team!.members.length + 1) : 1;
+
+    await prisma.$transaction(async (tx: any) => {
+      await tx.registration.update({
         where: { id },
         data: { status: 'CANCELLED', deletedAt: new Date() },
-      }),
-      prisma.event.update({
+      });
+
+      if (isTeam && registration.teamId) {
+        await tx.team.delete({
+          where: { id: registration.teamId }
+        });
+      }
+
+      const currentEvent = await tx.event.findUnique({ where: { id: registration.eventId } });
+      const newCount = Math.max(0, currentEvent.currentCount - decrementAmount);
+
+      await tx.event.update({
         where: { id: registration.eventId },
-        data: { currentCount: { decrement: 1 } },
-      }),
-    ]);
+        data: { currentCount: newCount },
+      });
+    });
 
     await invalidateCacheByPrefix('events');
     await createAuditLog(req, {
@@ -273,6 +356,15 @@ class RegistrationsService {
       severity: 'WARNING',
       resource: 'Registration',
       resourceId: id,
+      targetUserId: userId,
+      targetUserName: isTeam ? registration.team!.name : `${registration.user.firstName} ${registration.user.lastName || ''}`.trim(),
+      oldValue: { 
+        status: registration.status, 
+        eventName: registration.event.title,
+        registrationType: isTeam ? 'TEAM' : 'SOLO',
+        teamName: isTeam ? registration.team!.name : undefined,
+        seatsRestored: decrementAmount
+      },
     });
   }
 
@@ -295,7 +387,7 @@ class RegistrationsService {
       resource: 'Registration',
       resourceId: regId,
       oldValue: { status: registration.status },
-      newValue: { status },
+      newValue: { status, eventName: updated.event.title, studentName: `${updated.user.firstName} ${updated.user.lastName || ''}`.trim() },
     });
 
     return updated;

@@ -104,7 +104,7 @@ export default function AdminEventsPage() {
       endDate: new Date(Date.now() + 86400000).toISOString().slice(0, 16), 
       registrationDeadline: new Date(Date.now() + 86400000).toISOString().slice(0, 16),
       maxParticipants: 100,
-      minTeamSize: 2, maxTeamSize: 4, isPublished: true, status: 'DRAFT'
+      minTeamSize: 2, maxTeamSize: 4, isPublished: true, status: 'UPCOMING'
     }
   });
 
@@ -125,7 +125,7 @@ export default function AdminEventsPage() {
       minTeamSize: event.minTeamSize || 2,
       maxTeamSize: event.maxTeamSize || 4,
       isPublished: event.isPublished ?? true,
-      status: event.status || 'DRAFT',
+      status: event.status || 'UPCOMING',
     });
     setModalState({ type: 'EDIT', event });
   };
@@ -137,8 +137,8 @@ export default function AdminEventsPage() {
       endDate: new Date(formData.endDate).toISOString(),
       registrationDeadline: formData.registrationDeadline ? new Date(formData.registrationDeadline).toISOString() : undefined,
       maxParticipants: Number(formData.maxParticipants),
-      minTeamSize: formData.eventType !== 'INDIVIDUAL' ? Number(formData.minTeamSize) : undefined,
-      maxTeamSize: formData.eventType !== 'INDIVIDUAL' ? Number(formData.maxTeamSize) : undefined,
+      minTeamSize: formData.eventType === 'INDIVIDUAL' ? 1 : Number(formData.minTeamSize),
+      maxTeamSize: formData.eventType === 'INDIVIDUAL' ? 1 : Number(formData.maxTeamSize),
     };
     if (modalState.type === 'EDIT' && modalState.event) {
       updateMutation.mutate({ id: modalState.event.id, data: payload });
@@ -363,7 +363,6 @@ export default function AdminEventsPage() {
                       >
                         <option value="INDIVIDUAL">Individual</option>
                         <option value="TEAM">Team</option>
-                        <option value="BOTH">Both</option>
                       </select>
                     </div>
                     <div>
@@ -372,7 +371,6 @@ export default function AdminEventsPage() {
                         {...register('status')}
                         className="w-full px-4 py-2.5 rounded-xl bg-[#121212] border border-white/10 text-white focus:border-violet-500 outline-none"
                       >
-                        <option value="DRAFT">Draft</option>
                         <option value="UPCOMING">Upcoming</option>
                         <option value="ONGOING">Ongoing</option>
                         <option value="COMPLETED">Completed</option>
@@ -389,7 +387,7 @@ export default function AdminEventsPage() {
                     </div>
                   </div>
 
-                  {(eventType === 'TEAM' || eventType === 'BOTH') && (
+                  {eventType === 'TEAM' && (
                     <div className="grid grid-cols-2 gap-4 bg-violet-500/10 p-4 rounded-xl border border-violet-500/20">
                       <div>
                         <label className="block text-sm font-medium text-violet-200 mb-1.5">Min Team Size</label>

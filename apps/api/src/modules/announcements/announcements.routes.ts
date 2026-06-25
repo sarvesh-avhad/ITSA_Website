@@ -85,7 +85,9 @@ router.patch('/:id', authenticate, requirePermission(PERMISSIONS.ANNOUNCEMENTS_U
       action: 'ANNOUNCEMENT_UPDATED', 
       severity: 'INFO',
       resource: 'Announcement', 
-      resourceId: announcement.id 
+      resourceId: announcement.id,
+      oldValue: { title: existing.title },
+      newValue: { title: announcement.title }
     });
     res.json({ success: true, data: announcement });
   } catch (err) { next(err); }
@@ -94,12 +96,15 @@ router.patch('/:id', authenticate, requirePermission(PERMISSIONS.ANNOUNCEMENTS_U
 // Delete
 router.delete('/:id', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
+    const announcement = await prisma.announcement.findUnique({ where: { id: (req.params.id as string) } });
+    if (!announcement) throw new NotFoundError('Announcement');
     await prisma.announcement.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
     await createAuditLog(req, { 
       action: 'ANNOUNCEMENT_DELETED', 
       severity: 'WARNING',
       resource: 'Announcement', 
-      resourceId: (req.params.id as string) as string 
+      resourceId: (req.params.id as string) as string,
+      oldValue: { title: announcement.title }
     });
     res.json({ success: true, data: { message: 'Announcement deleted' } });
   } catch (err) { next(err); }

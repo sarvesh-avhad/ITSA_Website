@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { getDisplayName, getInitials } from '@/lib/utils';
 import apiClient from '@/lib/api-client';
-import { individualRegistrationSchema, teamRegistrationSchema } from '@itsa/shared';
+import { individualRegistrationSchema, teamRegistrationSchema, getRegistrationMode } from '@itsa/shared';
 import { Loader2, ArrowLeft, Users, User, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -28,7 +28,21 @@ export default function EventRegistrationPage() {
     enabled: !!slug,
   });
 
-  const isTeam = event?.eventType === 'TEAM';
+  const [registrationMode, setRegistrationMode] = useState<'INDIVIDUAL' | 'TEAM'>('INDIVIDUAL');
+
+  useEffect(() => {
+    if (event) {
+      const mode = getRegistrationMode(event);
+      if (mode === 'MANDATORY_TEAM') {
+        setRegistrationMode('TEAM');
+      } else {
+        setRegistrationMode('INDIVIDUAL');
+      }
+    }
+  }, [event]);
+
+  const isTeam = registrationMode === 'TEAM';
+  const isOptionalTeam = event ? getRegistrationMode(event) === 'OPTIONAL_TEAM' : false;
 
   const individualForm = useForm({
     resolver: zodResolver(individualRegistrationSchema),
@@ -68,6 +82,37 @@ export default function EventRegistrationPage() {
   };
 
   const onSubmitTeam = async (data: any) => {
+    if (!event) return;
+    const totalSize = data.members.length + 1;
+    if (event.minTeamSize && totalSize < event.minTeamSize) {
+      toast.error(`Team must have at least ${event.minTeamSize} members (including you)`);
+      return;
+    }
+    if (event.maxTeamSize && totalSize > event.maxTeamSize) {
+      toast.error(`Team size cannot exceed ${event.maxTeamSize} members (including you)`);
+      return;
+    }
+
+    const emails = data.members.map((m: any) => m.email.toLowerCase());
+    const prns = data.members.map((m: any) => m.prn?.toUpperCase()).filter(Boolean);
+
+    if (user?.email && emails.includes(user.email.toLowerCase())) {
+      toast.error('You cannot add yourself as a team member. You are already the leader.');
+      return;
+    }
+    if (user?.prn && prns.includes(user.prn.toUpperCase())) {
+      toast.error('Your PRN is already used as the leader.');
+      return;
+    }
+    if (new Set(emails).size !== emails.length) {
+      toast.error('Duplicate email addresses found in your team members.');
+      return;
+    }
+    if (prns.length > 0 && new Set(prns).size !== prns.length) {
+      toast.error('Duplicate PRNs found in your team members.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await apiClient.post('/registrations/team', data);
@@ -124,7 +169,7 @@ export default function EventRegistrationPage() {
         <div className="glass-card rounded-3xl p-8 shadow-2xl shadow-black/50">
           <div className="mb-8 pb-8 border-b border-white/10">
             <h1 className="text-3xl font-bold text-white mb-2">Register for {event.title}</h1>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
               <span className="flex items-center gap-1.5">
                 {isTeam ? <Users size={16} className="text-amber-400" /> : <User size={16} className="text-violet-400" />}
                 {isTeam ? 'Team Registration' : 'Individual Registration'}
@@ -132,6 +177,25 @@ export default function EventRegistrationPage() {
               <span>•</span>
               <span>{new Date(event.startDate).toLocaleDateString()}</span>
             </div>
+
+            {isOptionalTeam && (
+              <div className="bg-white/5 p-1 rounded-xl flex gap-1 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setRegistrationMode('INDIVIDUAL')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${registrationMode === 'INDIVIDUAL' ? 'bg-violet-600 text-white shadow-lg' : 'text-muted-foreground hover:text-white hover:bg-white/5'}`}
+                >
+                  Register Individually
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegistrationMode('TEAM')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${registrationMode === 'TEAM' ? 'bg-violet-600 text-white shadow-lg' : 'text-muted-foreground hover:text-white hover:bg-white/5'}`}
+                >
+                  Register as Team
+                </button>
+              </div>
+            )}
           </div>
 
           {isTeam ? (
@@ -181,7 +245,7 @@ export default function EventRegistrationPage() {
                 {fields.map((field, index) => (
                   <div key={field.id} className="bg-white/5 rounded-xl p-5 border border-white/5 relative">
                     <h4 className="text-sm font-medium text-white mb-4">Member {index + 1}</h4>
-                    {fields.length > 1 && (
+                    {(fields.length + 1 > (event.minTeamSize || 2)) && (
                       <button type="button" onClick={() => remove(index)} className="absolute top-4 right-4 p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
                         <X size={16} />
                       </button>

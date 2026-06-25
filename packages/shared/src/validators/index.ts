@@ -117,9 +117,9 @@ const baseEventSchema = z.object({
   endDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid datetime' }),
   registrationDeadline: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid datetime' }).optional(),
   maxParticipants: z.number().int().positive().optional(),
-  eventType: z.enum(['INDIVIDUAL', 'TEAM', 'BOTH']),
+  eventType: z.enum(['INDIVIDUAL', 'TEAM']),
   categoryId: z.string().cuid().optional(),
-  maxTeamSize: z.number().int().min(2).max(10).optional(),
+  maxTeamSize: z.number().int().min(1).max(10).optional(),
   minTeamSize: z.number().int().min(1).max(10).optional(),
   isPublished: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
@@ -129,16 +129,32 @@ const baseEventSchema = z.object({
 export const createEventSchema = baseEventSchema.refine(
   (data) => new Date(data.endDate) > new Date(data.startDate),
   { message: 'End date must be after start date', path: ['endDate'] }
+).refine(
+  (data) => {
+    if (data.eventType !== 'INDIVIDUAL' && data.minTeamSize !== undefined && data.maxTeamSize !== undefined) {
+      return data.maxTeamSize >= data.minTeamSize;
+    }
+    return true;
+  },
+  { message: 'Max team size must be greater than or equal to min team size', path: ['maxTeamSize'] }
 );
 
 export const updateEventSchema = baseEventSchema.partial().extend({
   status: z.enum(['DRAFT', 'UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.eventType !== 'INDIVIDUAL' && data.minTeamSize !== undefined && data.maxTeamSize !== undefined) {
+      return data.maxTeamSize >= data.minTeamSize;
+    }
+    return true;
+  },
+  { message: 'Max team size must be greater than or equal to min team size', path: ['maxTeamSize'] }
+);
 
 export const eventFiltersSchema = z.object({
   status: z.enum(['DRAFT', 'UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED']).optional(),
   categoryId: z.string().cuid().optional(),
-  eventType: z.enum(['INDIVIDUAL', 'TEAM', 'BOTH']).optional(),
+  eventType: z.enum(['INDIVIDUAL', 'TEAM']).optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   search: z.string().max(200).optional(),

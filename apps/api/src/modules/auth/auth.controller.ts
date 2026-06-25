@@ -30,6 +30,14 @@ export class AuthController {
 
   async logout(req: Request, res: Response): Promise<void> {
     await authService.logout(req, res);
+    if (req.user) {
+      await createAuditLog(req, {
+        action: 'LOGOUT',
+        severity: 'INFO',
+        resource: 'User',
+        resourceId: req.user.userId,
+      });
+    }
     res.json({ success: true, data: { message: 'Logged out successfully' } });
   }
 
@@ -45,6 +53,8 @@ export class AuthController {
         resource: 'User',
         resourceId: user.id,
         targetUserId: user.id,
+        targetUserName: `${user.firstName} ${user.lastName || ''}`.trim(),
+        targetUserEmail: user.email,
       });
     }
 
@@ -53,6 +63,7 @@ export class AuthController {
 
   async resetPassword(req: Request, res: Response): Promise<void> {
     const targetUserId = await authService.resetPassword(req.body.token, req.body.password);
+    const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
 
     await createAuditLog(req, {
       action: 'PASSWORD_RESET_COMPLETED',
@@ -60,6 +71,8 @@ export class AuthController {
       resource: 'User',
       resourceId: targetUserId,
       targetUserId,
+      targetUserName: targetUser ? `${targetUser.firstName} ${targetUser.lastName || ''}`.trim() : undefined,
+      targetUserEmail: targetUser ? targetUser.email : undefined,
     });
 
     res.json({ success: true, data: { message: 'Password reset successfully' } });
@@ -71,7 +84,7 @@ export class AuthController {
   }
 
   async updateMe(req: Request, res: Response): Promise<void> {
-    const user = await authService.updateProfile(req.user!.userId, req.body);
+    const user = await authService.updateProfile(req.user!.userId, req.body, req);
     res.json({ success: true, data: user });
   }
 }

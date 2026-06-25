@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useParams, Link } from 'react-router-dom';
 import apiClient from '@/lib/api-client';
 import { Calendar, MapPin, Users, Clock, AlertCircle, ChevronRight, CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -7,6 +8,7 @@ import { motion } from 'framer-motion';
 import { cn, timeUntil } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { SEO } from '@/components/seo';
+import { getRegistrationMode } from '@itsa/shared';
 import { AuthModal } from '@/components/auth/auth-modal';
 
 const fetchEventDetail = async (slug: string) => {
@@ -51,11 +53,45 @@ export default function EventDetailPage() {
   const { isAuthenticated } = useAuthStore();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  const queryClient = useQueryClient();
+
   const { data: event, isLoading, error } = useQuery({
     queryKey: ['event', slug],
     queryFn: () => fetchEventDetail(slug as string),
     enabled: !!slug,
   });
+
+  const { data: myRegistrations } = useQuery({
+    queryKey: ['my-registrations'],
+    queryFn: async () => {
+      const res = await apiClient.get('/registrations/my');
+      return res.data.data;
+    },
+    enabled: isAuthenticated,
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/registrations/${id}`);
+    },
+    onSuccess: () => {
+      toast.success('Registration cancelled successfully');
+      queryClient.invalidateQueries({ queryKey: ['event', slug] });
+      queryClient.invalidateQueries({ queryKey: ['my-registrations'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.error?.message || 'Failed to cancel registration');
+    }
+  });
+
+  const handleCancel = (id: string) => {
+    if (window.confirm('Are you sure you want to cancel your registration? This action cannot be undone.')) {
+      cancelMutation.mutate(id);
+    }
+  };
+
+  const userRegistration = myRegistrations?.find((r: any) => r.eventId === event?.id);
+  const isRegistered = !!userRegistration && userRegistration.status !== 'CANCELLED';
 
   if (isLoading) {
     return (
@@ -115,7 +151,9 @@ export default function EventDetailPage() {
                   {event.category?.name || 'General'}
                 </span>
                 <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/5 border border-border text-white">
-                  {event.eventType === 'TEAM' ? 'Team Event' : 'Individual Event'}
+                  {getRegistrationMode(event) === 'INDIVIDUAL' && '👤 Individual'}
+                  {getRegistrationMode(event) === 'OPTIONAL_TEAM' && `👥 Individual / Team (${event.minTeamSize || 1}–${event.maxTeamSize || 'Unlimited'} Members)`}
+                  {getRegistrationMode(event) === 'MANDATORY_TEAM' && `👥 Team (${event.minTeamSize || 2}–${event.maxTeamSize || 'Unlimited'} Members)`}
                 </span>
               </div>
               
@@ -129,7 +167,27 @@ export default function EventDetailPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
-                {isRegistrationOpen ? (
+                {isRegistered ? (
+                  <div className="flex items-center gap-4">
+                    <div className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl glass border border-white/10 text-emerald-400 font-bold text-lg cursor-default">
+                      <CheckCircle2 size={20} />
+                      {userRegistration.status === 'PENDING' ? 'Registration Pending' : 
+                       userRegistration.status === 'APPROVED' ? 'Registered' : 
+                       userRegistration.status === 'REJECTED' ? 'Registration Rejected' : 'Registered'}
+                    </div>
+                    {event.status === 'UPCOMING' && 
+                     (!event.registrationDeadline || new Date() < new Date(event.registrationDeadline)) &&
+                     !userRegistration.attendanceMarked && (
+                      <button
+                        onClick={() => handleCancel(userRegistration.id)}
+                        disabled={cancelMutation.isPending}
+                        className="inline-flex items-center justify-center px-6 py-4 rounded-xl border border-red-500/50 text-red-400 font-semibold hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                      >
+                        {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Registration'}
+                      </button>
+                    )}
+                  </div>
+                ) : isRegistrationOpen ? (
                   isAuthenticated ? (
                     <Link
                       to={`/events/${event.slug}/register`}

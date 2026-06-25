@@ -78,6 +78,8 @@ class AuthService {
       resource: 'User',
       resourceId: user.id,
       targetUserId: user.id,
+      targetUserName: `${user.firstName} ${user.lastName || ''}`.trim(),
+      targetUserEmail: user.email,
       newValue: { email: user.email, role: user.role },
     });
 
@@ -116,6 +118,16 @@ class AuthService {
 
     // Set refresh token cookie
     this.setRefreshTokenCookie(res, tokens.refreshToken);
+
+    await createAuditLog(req, {
+      action: 'LOGIN',
+      severity: 'INFO',
+      resource: 'User',
+      resourceId: user.id,
+      actorId: user.id,
+      actorName: `${user.firstName} ${user.lastName || ''}`.trim(),
+      actorEmail: user.email,
+    });
 
 
     return {
@@ -341,7 +353,10 @@ class AuthService {
     return user;
   }
 
-  async updateProfile(userId: string, data: UpdateProfileRequest) {
+  async updateProfile(userId: string, data: UpdateProfileRequest, req: Request) {
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existing) throw new NotFoundError('User');
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -374,6 +389,16 @@ class AuthService {
         isActive: true,
         isEmailVerified: true,
       },
+    });
+
+    await createAuditLog(req, {
+      action: 'PROFILE_UPDATED',
+      severity: 'INFO',
+      resource: 'User',
+      resourceId: user.id,
+      targetUserId: user.id,
+      targetUserName: `${user.firstName} ${user.lastName || ''}`.trim(),
+      targetUserEmail: user.email,
     });
 
     return user;

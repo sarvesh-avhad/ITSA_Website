@@ -124,13 +124,17 @@ router.post('/albums', authenticate, requirePermission(PERMISSIONS.GALLERY_CREAT
 // Update album
 router.patch('/albums/:id', authenticate, requirePermission(PERMISSIONS.GALLERY_UPDATE), validate(updateAlbumSchema), async (req, res, next) => {
   try {
-      const album = await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: req.body });
+    const existing = await prisma.galleryAlbum.findUnique({ where: { id: (req.params.id as string) } });
+    if (!existing) return res.status(404).json({ success: false, error: { message: 'Album not found' } });
+    const album = await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: req.body });
     await invalidateCacheByPrefix('gallery');
     await createAuditLog(req, { 
       action: 'ALBUM_UPDATED', 
       severity: 'INFO',
       resource: 'GalleryAlbum', 
-      resourceId: album.id 
+      resourceId: album.id,
+      oldValue: { title: existing.title },
+      newValue: { title: album.title }
     });
     res.json({ success: true, data: album });
   } catch (err) { next(err); }
@@ -139,13 +143,16 @@ router.patch('/albums/:id', authenticate, requirePermission(PERMISSIONS.GALLERY_
 // Delete album
 router.delete('/albums/:id', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
+    const album = await prisma.galleryAlbum.findUnique({ where: { id: (req.params.id as string) } });
+    if (!album) return res.status(404).json({ success: false, error: { message: 'Album not found' } });
     await prisma.galleryAlbum.update({ where: { id: (req.params.id as string) }, data: { deletedAt: new Date() } });
     await invalidateCacheByPrefix('gallery');
     await createAuditLog(req, { 
       action: 'ALBUM_DELETED', 
       severity: 'WARNING',
       resource: 'GalleryAlbum', 
-      resourceId: (req.params.id as string) as string 
+      resourceId: (req.params.id as string) as string,
+      oldValue: { title: album.title }
     });
     res.json({ success: true, data: { message: 'Album deleted' } });
   } catch (err) { next(err); }
@@ -157,6 +164,7 @@ router.post('/albums/:id/media', authenticate, requirePermission(PERMISSIONS.GAL
     const { type = 'IMAGE', url, thumbnailUrl, publicId, width, height, sizeBytes, caption } = req.body;
     const media = await prisma.galleryMedia.create({
       data: { albumId: (req.params.id as string), type, url, thumbnailUrl, publicId, width, height, sizeBytes, caption },
+      include: { album: { select: { title: true } } }
     });
     await invalidateCacheByPrefix('gallery');
     await createAuditLog(req, { 
@@ -164,7 +172,7 @@ router.post('/albums/:id/media', authenticate, requirePermission(PERMISSIONS.GAL
       severity: 'INFO',
       resource: 'GalleryMedia', 
       resourceId: media.id,
-      newValue: { type, publicId }
+      newValue: { type, publicId, albumName: media.album.title }
     });
     res.status(201).json({ success: true, data: media });
   } catch (err) { next(err); }
@@ -173,13 +181,19 @@ router.post('/albums/:id/media', authenticate, requirePermission(PERMISSIONS.GAL
 // Delete media
 router.delete('/media/:id', authenticate, requirePermission(PERMISSIONS.GALLERY_DELETE), async (req, res, next) => {
   try {
+    const media = await prisma.galleryMedia.findUnique({ 
+      where: { id: (req.params.id as string) },
+      include: { album: { select: { title: true } } }
+    });
+    if (!media) return res.status(404).json({ success: false, error: { message: 'Media not found' } });
     await prisma.galleryMedia.delete({ where: { id: (req.params.id as string) } });
     await invalidateCacheByPrefix('gallery');
     await createAuditLog(req, { 
       action: 'MEDIA_DELETED', 
       severity: 'WARNING',
       resource: 'GalleryMedia', 
-      resourceId: req.params.id as string 
+      resourceId: req.params.id as string,
+      oldValue: { type: media.type, publicId: media.publicId, albumName: media.album.title }
     });
     res.json({ success: true, data: { message: 'Media deleted' } });
   } catch (err) { next(err); }

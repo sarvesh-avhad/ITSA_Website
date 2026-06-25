@@ -3,7 +3,7 @@
 // ============================================================
 
 export type EventStatus = 'DRAFT' | 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
-export type EventType = 'INDIVIDUAL' | 'TEAM' | 'BOTH';
+export type EventType = 'INDIVIDUAL' | 'TEAM';
 
 export interface Event {
   id: string;

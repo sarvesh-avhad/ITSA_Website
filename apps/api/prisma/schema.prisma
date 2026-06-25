@@ -34,7 +34,6 @@ enum EventStatus {
 enum EventType {
   INDIVIDUAL
   TEAM
-  BOTH
 }
 
 enum RegistrationStatus {

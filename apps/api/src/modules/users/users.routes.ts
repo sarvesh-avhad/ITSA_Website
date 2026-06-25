@@ -129,6 +129,15 @@ router.get('/export', authenticate, requireRole('ADMIN'), async (req, res, next)
       extension = 'csv';
     }
 
+    await createAuditLog(req, {
+      action: 'REPORT_EXPORTED',
+      severity: 'INFO',
+      resource: 'User',
+      resourceId: 'export',
+      targetUserName: 'Users Report',
+      newValue: { format, recordsExported: flatData.length },
+    });
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename=users_export_${new Date().toISOString().split('T')[0]}.${extension}`);
     res.send(buffer);
@@ -184,6 +193,8 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
       resource: 'User',
       resourceId: updatedUser.id,
       targetUserId: updatedUser.id,
+      targetUserName: `${user.firstName} ${user.lastName || ''}`.trim(),
+      targetUserEmail: user.email,
       oldValue: { role: user.role },
       newValue: { role },
     });
@@ -221,6 +232,8 @@ router.patch('/:id/permissions', authenticate, requireRole('ADMIN'), async (req,
         resource: 'User',
         resourceId: updatedUser.id,
         targetUserId: updatedUser.id,
+        targetUserName: `${user.firstName} ${user.lastName || ''}`.trim(),
+        targetUserEmail: user.email,
         newValue: { granted: added },
       });
     }
@@ -231,6 +244,8 @@ router.patch('/:id/permissions', authenticate, requireRole('ADMIN'), async (req,
         resource: 'User',
         resourceId: updatedUser.id,
         targetUserId: updatedUser.id,
+        targetUserName: `${user.firstName} ${user.lastName || ''}`.trim(),
+        targetUserEmail: user.email,
         oldValue: { revoked: removed },
       });
     }
@@ -262,6 +277,8 @@ router.post('/:id/suspend', authenticate, requireRole('ADMIN'), async (req, res,
       resource: 'User',
       resourceId: updatedUser.id,
       targetUserId: updatedUser.id,
+      targetUserName: `${user.firstName} ${user.lastName || ''}`.trim(),
+      targetUserEmail: user.email,
     });
 
     res.json({ success: true, data: updatedUser });

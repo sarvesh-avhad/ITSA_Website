@@ -56,6 +56,7 @@ router.patch('/', authenticate, requireRole('ADMIN'), async (req, res, next) => 
       action: 'SETTINGS_UPDATED',
       severity: 'CRITICAL',
       resource: 'SiteConfig',
+      targetUserName: 'Site Settings',
       newValue: { updatedKeys: updates.map(u => u.key) },
     });
 
