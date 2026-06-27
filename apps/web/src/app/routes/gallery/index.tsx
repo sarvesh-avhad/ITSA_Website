@@ -53,6 +53,8 @@ const DUMMY_ALBUMS = [
   }
 ];
 
+import { SEO } from '@/components/seo';
+
 export default function GalleryPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['gallery-albums'],
@@ -64,12 +66,13 @@ export default function GalleryPage() {
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-6">
+      <SEO title="Event Gallery" description="Browse through photos and videos from our past events." />
       <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-            Event <span className="gradient-text">Gallery</span>
+            Event Gallery
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Relive the memories. Browse through photos and videos from our past events, hackathons, and seminars.

@@ -44,7 +44,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen pt-28 pb-20 overflow-hidden">
-      <SEO title="Contact Us" description="Get in touch with the Information Technology Students Association (ITSA) team." />
+      <SEO title="Get in Touch" description="Get in touch with the Information Technology Students Association (ITSA) team." />
       {/* Background */}
       <div className="fixed inset-0 z-0 bg-grid opacity-20 pointer-events-none" />
 
@@ -62,7 +62,7 @@ export default function ContactPage() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white mb-6">
-              Get in <span className="gradient-text">Touch</span>
+              Get in Touch
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Have questions about an event? Interested in sponsoring us? 

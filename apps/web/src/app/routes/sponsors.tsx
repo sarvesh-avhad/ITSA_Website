@@ -39,7 +39,7 @@ export default function SponsorsPage() {
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-            Our <span className="gradient-text">Partners</span>
+            Our Proud Sponsors
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
             We are immensely grateful to the industry leaders who support our vision and make our events possible.

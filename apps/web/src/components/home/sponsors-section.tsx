@@ -40,8 +40,8 @@ export function SponsorsSection() {
           <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest text-violet-400 bg-violet-500/10 border border-violet-500/20 mb-4">
             Our Partners
           </span>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Powered by <span className="gradient-text">Industry Leaders</span>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 text-center">
+            Our Proud <span className="gradient-text">Industry Leaders</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             We're proud to collaborate with organizations that share our vision of empowering the next generation of tech talent.

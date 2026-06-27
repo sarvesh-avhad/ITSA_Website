@@ -65,7 +65,7 @@ export default function EventsListingPage() {
 
   return (
     <div className="min-h-screen pt-28 pb-20">
-      <SEO title="Events" description="Explore workshops, hackathons, and competitions organized by ITSA." />
+      <SEO title="Explore Events" description="Explore workshops, hackathons, and competitions organized by ITSA." />
       {/* Background */}
       <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
 
@@ -73,7 +73,7 @@ export default function EventsListingPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-            Explore <span className="gradient-text">Events</span>
+            Explore Events
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Discover workshops, hackathons, and competitions. Register to participate, compete, and learn.

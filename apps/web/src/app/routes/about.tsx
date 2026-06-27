@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Target, Eye, Award, CheckCircle2, ArrowLeft, History } from 'lucide-react';
+import { Target, Eye, Award, CheckCircle2, ArrowLeft, History, Linkedin } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/seo';
 
@@ -17,12 +17,12 @@ const faculty = [
 ];
 
 const committee = [
-  { name: 'Sarah Williams', role: 'President', image: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Michael Chen', role: 'Vice President', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Aisha Patel', role: 'Secretary', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400' },
-  { name: 'David Kim', role: 'Treasurer', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Priya Sharma', role: 'Technical Head', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Arjun Singh', role: 'Marketing Head', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400' },
+  { name: 'Sarah Williams', role: 'President', image: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=400', description: 'Leading the chapter with a vision for community growth and technology adoption.', linkedinUrl: 'https://linkedin.com' },
+  { name: 'Michael Chen', role: 'Vice President', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400', description: 'The backbone of operations, ensuring smooth execution of all our initiatives.', linkedinUrl: 'https://linkedin.com' },
+  { name: 'Aisha Patel', role: 'Secretary', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400', description: 'Master of documentation and guiding our communications to reach wider audiences.', linkedinUrl: 'https://linkedin.com' },
+  { name: 'David Kim', role: 'Treasurer', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400', description: 'Driving financial strategy and managing resources to amplify our impact.', linkedinUrl: 'https://linkedin.com' },
+  { name: 'Priya Sharma', role: 'Technical Head', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400', description: 'Leading technical initiatives and building innovative solutions.', linkedinUrl: 'https://linkedin.com' },
+  { name: 'Arjun Singh', role: 'Marketing Head', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400', description: 'Driving marketing campaigns and student engagement across platforms.' },
 ];
 
 export default function AboutPage() {
@@ -52,7 +52,7 @@ export default function AboutPage() {
               Department of IT
             </span>
             <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white mb-6 leading-[1.1]">
-              About <span className="gradient-text">ITSA</span>
+              About ITSA
             </h1>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-balance">
               The Information Technology Students Association (ITSA) is the premier student body 
@@ -158,7 +158,7 @@ export default function AboutPage() {
                 className="text-center w-64"
               >
                 <div className="w-48 h-48 mx-auto rounded-full overflow-hidden mb-6 border-4 border-white/10 hover:border-violet-500/50 transition-colors">
-                  <img src={member.image} alt={member.name} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500 grayscale hover:grayscale-0" />
+                  <img src={member.image} alt={member.name} className="w-full h-full object-cover hover:scale-[1.05] transition-transform duration-300 ease-out" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
                 <p className="text-violet-400 font-medium">{member.role}</p>
@@ -173,7 +173,7 @@ export default function AboutPage() {
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Core Committee</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">The dedicated student leaders executing the ITSA vision.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {committee.map((member, i) => (
               <motion.div
                 key={member.name}
@@ -181,13 +181,40 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="group relative liquid-glass rounded-3xl p-6 text-center border border-white/5 hover:border-violet-500/30 transition-colors"
+                className="group flex flex-col liquid-glass rounded-2xl overflow-hidden border border-white/5 hover:border-violet-500/40 hover:-translate-y-[6px] hover:shadow-[0_8px_30px_rgba(124,58,237,0.15)] transition-all duration-300 h-full"
               >
-                <div className="w-32 h-32 mx-auto rounded-full overflow-hidden mb-6">
-                  <img src={member.image} alt={member.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 grayscale group-hover:grayscale-0" />
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-white/5">
+                  <img 
+                    src={member.image} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-300 ease-out" 
+                  />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
-                <p className="text-sm font-medium text-violet-400 uppercase tracking-widest">{member.role}</p>
+                
+                <div className="flex flex-col flex-1 p-6 bg-white/5 text-center">
+                  <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
+                  <p className="text-sm font-medium text-violet-400 mb-3">{member.role}</p>
+                  
+                  {member.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
+                      {member.description}
+                    </p>
+                  )}
+                  
+                  <div className="mt-auto flex justify-center items-center h-8">
+                    {member.linkedinUrl && (
+                      <a 
+                        href={member.linkedinUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-muted-foreground hover:text-[#0A66C2] hover:scale-110 transition-all duration-200"
+                        aria-label={`${member.name}'s LinkedIn`}
+                      >
+                        <Linkedin className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>

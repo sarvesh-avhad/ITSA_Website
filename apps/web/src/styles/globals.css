@@ -15,6 +15,10 @@
   
   --font-display: 'Instrument Serif', serif;
   --font-body: 'Inter', sans-serif;
+
+  --color-gradient-start: #38bdf8; /* sky-400 */
+  --color-gradient-mid: #818cf8; /* indigo-400 */
+  --color-gradient-end: #c084fc; /* purple-400 */
 }
 /* ============================================================
    ITSA DESIGN SYSTEM — Premium Dark Theme

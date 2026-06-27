@@ -25,7 +25,7 @@ export function AboutPreview() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <motion.h2 
-            className="text-4xl md:text-5xl font-black text-white mb-6"
+            className="text-4xl sm:text-5xl font-bold text-white mb-6 text-center"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

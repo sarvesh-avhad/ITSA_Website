@@ -14,6 +14,7 @@ const navLinks = [
   { label: 'Gallery', href: '/gallery' },
   { label: 'Sponsors', href: '/sponsors' },
   { label: 'Contact', href: '/contact' },
+  { label: 'Join ITSA', href: '/join-itsa' },
 ];
 
 export function MainLayout() {

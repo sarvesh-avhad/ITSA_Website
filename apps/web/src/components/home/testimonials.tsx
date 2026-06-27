@@ -25,12 +25,12 @@ export function Testimonials() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <motion.h2 
-            className="text-4xl md:text-5xl font-black text-white mb-4"
+            className="text-4xl md:text-5xl font-black text-white mb-6 text-center"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            Student <span className="gradient-text">Voices</span>
+            Student <span className="gradient-text">Reviews</span>
           </motion.h2>
         </div>
 

@@ -10,7 +10,7 @@ export function HeroSection() {
           className="text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-[-2.46px] max-w-7xl font-normal text-foreground animate-fade-rise"
           style={{ fontFamily: 'var(--font-display)' }}
         >
-          Empowering <em className="not-italic text-muted-foreground">Innovation</em> Through <em className="not-italic text-muted-foreground">Technology.</em>
+          Information <em className="not-italic text-muted-foreground">Technology</em> Students <em className="not-italic text-muted-foreground">Association.</em>
         </h1>
         
         <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mt-8 leading-relaxed animate-fade-rise-delay">
@@ -21,7 +21,7 @@ export function HeroSection() {
           <Link to="/events" className="liquid-glass rounded-full px-10 py-4 text-base text-foreground hover:scale-[1.03] transition-transform cursor-pointer inline-flex items-center justify-center">
             Explore Events
           </Link>
-          <Link to="/auth/register" className="glass-card bg-white/5 border-white/10 rounded-full px-10 py-4 text-base text-foreground hover:bg-white/10 hover:scale-[1.03] transition-all cursor-pointer inline-flex items-center justify-center">
+          <Link to="/join-itsa" className="glass-card bg-white/5 border-white/10 rounded-full px-10 py-4 text-base text-foreground hover:bg-white/10 hover:scale-[1.03] transition-all cursor-pointer inline-flex items-center justify-center">
             Join ITSA
           </Link>
         </div>
