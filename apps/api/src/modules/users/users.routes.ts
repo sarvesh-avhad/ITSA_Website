@@ -265,6 +265,11 @@ router.post('/:id/suspend', authenticate, requireRole('ADMIN'), async (req, res,
       return res.status(403).json({ success: false, error: { message: 'Cannot suspend a SUPER_ADMIN' } });
     }
 
+    // Prevent self-suspension
+    if (req.params.id === (req as any).user?.id) {
+      return res.status(403).json({ success: false, error: { message: 'You cannot suspend your own account' } });
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: req.params.id as string },
       data: { isActive: !user.isActive },

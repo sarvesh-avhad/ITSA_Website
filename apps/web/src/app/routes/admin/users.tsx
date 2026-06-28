@@ -181,8 +181,26 @@ export default function AdminUsersPage() {
                         <button onClick={() => openRoleModal(user)} className="p-2 text-muted-foreground hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Manage Role">
                           <UserCog size={16} />
                         </button>
-                        <button onClick={() => setModalState({ type: 'SUSPEND', user })} className={cn("p-2 text-muted-foreground rounded-lg transition-colors", user.isActive ? "hover:text-red-400 hover:bg-red-400/10" : "hover:text-emerald-400 hover:bg-emerald-400/10")} title={user.isActive ? "Suspend User" : "Unsuspend User"}>
-                          <ShieldAlert size={16} className={user.isActive ? "" : "text-red-400"} />
+                        <button
+                          onClick={() => {
+                            if (user.id === currentUser?.id) {
+                              toast.error('You cannot suspend your own account.');
+                              return;
+                            }
+                            setModalState({ type: 'SUSPEND', user });
+                          }}
+                          disabled={user.id === currentUser?.id}
+                          className={cn(
+                            "p-2 text-muted-foreground rounded-lg transition-colors",
+                            user.id === currentUser?.id
+                              ? "opacity-30 cursor-not-allowed"
+                              : user.isActive
+                                ? "hover:text-red-400 hover:bg-red-400/10"
+                                : "hover:text-emerald-400 hover:bg-emerald-400/10"
+                          )}
+                          title={user.id === currentUser?.id ? "You cannot suspend your own account" : user.isActive ? "Suspend User" : "Unsuspend User"}
+                        >
+                          <ShieldAlert size={16} className={user.isActive ? '' : 'text-red-400'} />
                         </button>
                       </div>
                     </td>
