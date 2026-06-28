@@ -31,6 +31,7 @@ export class AuditController {
           'CERTIFICATES': ['CERTIFICATE_ISSUED', 'CERTIFICATE_REVOKED'],
           'SETTINGS': ['SETTINGS_UPDATED', 'SITE_SETTINGS_UPDATED'],
           'SYSTEM': ['BACKUP_CREATED', 'SYSTEM_MAINTENANCE'],
+          'COMMITTEE': ['COMMITTEE_MEMBER_CREATED', 'COMMITTEE_MEMBER_UPDATED', 'COMMITTEE_MEMBER_DELETED'],
         };
         const mappedActions = catMap[category as string];
         if (mappedActions) {
@@ -120,6 +121,7 @@ export class AuditController {
           'CERTIFICATES': ['CERTIFICATE_ISSUED', 'CERTIFICATE_REVOKED'],
           'SETTINGS': ['SETTINGS_UPDATED', 'SITE_SETTINGS_UPDATED'],
           'SYSTEM': ['BACKUP_CREATED', 'SYSTEM_MAINTENANCE'],
+          'COMMITTEE': ['COMMITTEE_MEMBER_CREATED', 'COMMITTEE_MEMBER_UPDATED', 'COMMITTEE_MEMBER_DELETED'],
         };
         const mappedActions = catMap[category as string];
         if (mappedActions) {
@@ -212,6 +214,9 @@ export class AuditController {
           case 'MEDIA_DELETED': desc = `${actor} deleted media from ${target}.`; break;
           case 'ANNOUNCEMENT_CREATED': desc = `${actor} created announcement ${target}.`; break;
           case 'SPONSOR_CREATED': desc = `${actor} added sponsor ${target}.`; break;
+          case 'COMMITTEE_MEMBER_CREATED': desc = `${actor} added committee member ${target}.`; break;
+          case 'COMMITTEE_MEMBER_UPDATED': desc = `${actor} updated committee member ${target}.`; break;
+          case 'COMMITTEE_MEMBER_DELETED': desc = `${actor} deleted committee member ${target}.`; break;
           case 'DATABASE_EXPORTED': desc = `${actor} exported the database.`; break;
           case 'REPORT_EXPORTED': desc = `${actor} exported a report.`; break;
           default:

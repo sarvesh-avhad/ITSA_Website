@@ -35,6 +35,7 @@ import AdminCertificatesPage from '@/app/routes/admin/certificates';
 import AdminSettingsPage from '@/app/routes/admin/settings';
 import AdminAuditLogsPage from '@/app/routes/admin/audit-logs';
 import AdminMyPermissionsPage from '@/app/routes/admin/my-permissions';
+import AdminCommitteePage from '@/app/routes/admin/committee';
 import StudentDashboardPage from '@/app/routes/dashboard/index';
 import StudentCertificatesPage from '@/app/routes/dashboard/certificates';
 import StudentSettingsPage from '@/app/routes/dashboard/settings';
@@ -155,6 +156,7 @@ export default function App() {
             <Route path="certificates" element={<PermissionGuard permission={PERMISSIONS.CERTIFICATES_GENERATE}><AdminCertificatesPage /></PermissionGuard>} />
             <Route path="audit-logs" element={<PermissionGuard permission={PERMISSIONS.AUDIT_LOGS_READ}><AdminAuditLogsPage /></PermissionGuard>} />
             <Route path="settings" element={<PermissionGuard permission={PERMISSIONS.SETTINGS_MANAGE}><AdminSettingsPage /></PermissionGuard>} />
+            <Route path="committee" element={<AdminCommitteePage />} />
             <Route path="*" element={<div className="p-8 text-center text-muted-foreground">This admin module is coming soon.</div>} />
           </Route>
         </Routes>

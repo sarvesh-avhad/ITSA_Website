@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
-import { Target, Eye, Award, CheckCircle2, ArrowLeft, History, Linkedin } from 'lucide-react';
+import { Target, Eye, Award, ArrowLeft, Linkedin, Github, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/seo';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/lib/api-client';
 
 const timeline = [
   { year: '2022', title: 'ITSA Inception', desc: 'The Information Technology Students Association was founded to bridge the gap between curriculum and industry.' },
@@ -11,22 +13,98 @@ const timeline = [
   { year: '2026', title: 'Going Global', desc: 'Expanding our reach through virtual global events and international student collaborations.' }
 ];
 
-const faculty = [
-  { name: 'Dr. Jane Smith', role: 'Head of Department (IT)', image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400' },
-  { name: 'Prof. John Doe', role: 'Faculty Coordinator', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=400' },
-];
-
-const committee = [
-  { name: 'Sarah Williams', role: 'President', image: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=400', description: 'Leading the chapter with a vision for community growth and technology adoption.', linkedinUrl: 'https://linkedin.com' },
-  { name: 'Michael Chen', role: 'Vice President', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400', description: 'The backbone of operations, ensuring smooth execution of all our initiatives.', linkedinUrl: 'https://linkedin.com' },
-  { name: 'Aisha Patel', role: 'Secretary', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400', description: 'Master of documentation and guiding our communications to reach wider audiences.', linkedinUrl: 'https://linkedin.com' },
-  { name: 'David Kim', role: 'Treasurer', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400', description: 'Driving financial strategy and managing resources to amplify our impact.', linkedinUrl: 'https://linkedin.com' },
-  { name: 'Priya Sharma', role: 'Technical Head', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400', description: 'Leading technical initiatives and building innovative solutions.', linkedinUrl: 'https://linkedin.com' },
-  { name: 'Arjun Singh', role: 'Marketing Head', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400', description: 'Driving marketing campaigns and student engagement across platforms.' },
-];
+const fetchCommittee = async () => {
+  const res = await apiClient.get('/committee/assigned');
+  return res.data?.data || [];
+};
 
 export default function AboutPage() {
   const navigate = useNavigate();
+
+  const { data: assignments = [], isLoading } = useQuery({
+    queryKey: ['public-committee'],
+    queryFn: fetchCommittee
+  });
+
+  const faculty = assignments.filter((a: any) => a.committee === 'FACULTY').sort((a: any, b: any) => a.displayOrder - b.displayOrder || a.user.firstName.localeCompare(b.user.firstName));
+  const beCommittee = assignments.filter((a: any) => a.committee === 'BE').sort((a: any, b: any) => a.displayOrder - b.displayOrder || a.user.firstName.localeCompare(b.user.firstName));
+  const teCommittee = assignments.filter((a: any) => a.committee === 'TE').sort((a: any, b: any) => a.displayOrder - b.displayOrder || a.user.firstName.localeCompare(b.user.firstName));
+  const seCommittee = assignments.filter((a: any) => a.committee === 'SE').sort((a: any, b: any) => a.displayOrder - b.displayOrder || a.user.firstName.localeCompare(b.user.firstName));
+
+  const renderCommitteeSection = (title: string, subtitle: string, list: any[], hideGithub: boolean = false) => {
+    if (list.length === 0) return null;
+
+    return (
+      <div className="mb-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{title}</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">{subtitle}</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {list.map((assignment: any, i: number) => {
+            const name = `${assignment.user.firstName} ${assignment.user.lastName}`;
+            const image = assignment.committeeImage || assignment.user.avatarUrl || `https://ui-avatars.com/api/?name=${assignment.user.firstName}+${assignment.user.lastName}&background=random`;
+            return (
+              <motion.div
+                key={assignment.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group flex flex-col liquid-glass rounded-2xl overflow-hidden border border-white/5 hover:border-violet-500/40 hover:-translate-y-[6px] hover:shadow-[0_8px_30px_rgba(124,58,237,0.15)] transition-all duration-300 h-full"
+              >
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-white/5">
+                  <img 
+                    src={image} 
+                    alt={name} 
+                    className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-300 ease-out" 
+                    loading="lazy"
+                  />
+                </div>
+                
+                <div className="flex flex-col flex-1 p-6 bg-white/5 text-center">
+                  <h3 className="text-xl font-bold text-white mb-1">{name}</h3>
+                  <p className="text-sm font-medium text-violet-400 mb-3">{assignment.position}</p>
+                  
+                  {assignment.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
+                      {assignment.description}
+                    </p>
+                  )}
+                  
+                  <div className="mt-auto flex justify-center items-center h-8 gap-4">
+                    {assignment.linkedinUrl && (
+                      <a 
+                        href={assignment.linkedinUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-muted-foreground hover:text-[#0A66C2] hover:scale-110 transition-all duration-200"
+                        aria-label={`${name}'s LinkedIn`}
+                      >
+                        <Linkedin className="w-5 h-5" />
+                      </a>
+                    )}
+                    {!hideGithub && assignment.githubUrl && (
+                      <a 
+                        href={assignment.githubUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-muted-foreground hover:text-white hover:scale-110 transition-all duration-200"
+                        aria-label={`${name}'s GitHub`}
+                      >
+                        <Github className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen pt-28 pb-20 overflow-hidden">
       <SEO title="About ITSA" description="Learn about the Information Technology Students Association (ITSA) and our mission to empower tech leaders." />
@@ -141,84 +219,19 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Faculty Section */}
-        <div className="mb-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Faculty Advisors</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Guiding our vision with experience and wisdom.</p>
+        {/* Dynamic Committees */}
+        {isLoading ? (
+          <div className="py-24 flex justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
           </div>
-          <div className="flex flex-wrap justify-center gap-12">
-            {faculty.map((member, i) => (
-              <motion.div
-                key={member.name}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center w-64"
-              >
-                <div className="w-48 h-48 mx-auto rounded-full overflow-hidden mb-6 border-4 border-white/10 hover:border-violet-500/50 transition-colors">
-                  <img src={member.image} alt={member.name} className="w-full h-full object-cover hover:scale-[1.05] transition-transform duration-300 ease-out" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
-                <p className="text-violet-400 font-medium">{member.role}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Committee Section */}
-        <div className="mb-24">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Core Committee</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">The dedicated student leaders executing the ITSA vision.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {committee.map((member, i) => (
-              <motion.div
-                key={member.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group flex flex-col liquid-glass rounded-2xl overflow-hidden border border-white/5 hover:border-violet-500/40 hover:-translate-y-[6px] hover:shadow-[0_8px_30px_rgba(124,58,237,0.15)] transition-all duration-300 h-full"
-              >
-                <div className="relative aspect-[4/5] w-full overflow-hidden bg-white/5">
-                  <img 
-                    src={member.image} 
-                    alt={member.name} 
-                    className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-300 ease-out" 
-                  />
-                </div>
-                
-                <div className="flex flex-col flex-1 p-6 bg-white/5 text-center">
-                  <h3 className="text-xl font-bold text-white mb-1">{member.name}</h3>
-                  <p className="text-sm font-medium text-violet-400 mb-3">{member.role}</p>
-                  
-                  {member.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1">
-                      {member.description}
-                    </p>
-                  )}
-                  
-                  <div className="mt-auto flex justify-center items-center h-8">
-                    {member.linkedinUrl && (
-                      <a 
-                        href={member.linkedinUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-muted-foreground hover:text-[#0A66C2] hover:scale-110 transition-all duration-200"
-                        aria-label={`${member.name}'s LinkedIn`}
-                      >
-                        <Linkedin className="w-5 h-5" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+        ) : (
+          <>
+            {renderCommitteeSection('Faculty Advisors', 'Guiding our vision with experience and wisdom.', faculty, true)}
+            {renderCommitteeSection('BE Committee', 'The senior student leaders executing the ITSA vision.', beCommittee)}
+            {renderCommitteeSection('TE Committee', 'The dedicated student leaders driving our initiatives.', teCommittee)}
+            {renderCommitteeSection('SE Committee', 'The dynamic volunteers and upcoming leaders.', seCommittee)}
+          </>
+        )}
 
         {/* CTA */}
         <div className="text-center py-12">

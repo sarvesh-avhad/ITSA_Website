@@ -14,6 +14,7 @@ import { prisma } from '@/lib/prisma';
 import { redis } from '@/lib/redis';
 import uploadRoutes from '@/modules/upload/upload.routes';
 import auditRoutes from '@/modules/audit/audit.routes';
+import committeeRoutes from '@/modules/committee/committee.routes';
 
 export const apiRouter = Router();
 
@@ -80,4 +81,4 @@ apiRouter.use('/contact', contactRoutes);
 apiRouter.use('/upload', uploadRoutes);
 apiRouter.use('/admin/users', usersRoutes);
 apiRouter.use('/admin/audit-logs', auditRoutes);
-
+apiRouter.use('/committee', committeeRoutes);

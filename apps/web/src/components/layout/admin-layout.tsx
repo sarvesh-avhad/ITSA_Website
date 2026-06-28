@@ -21,6 +21,7 @@ const adminLinks = [
   { label: 'Certificates', href: '/admin/certificates', icon: Award, permission: PERMISSIONS.CERTIFICATES_GENERATE },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText, permission: PERMISSIONS.AUDIT_LOGS_READ },
   { label: 'Settings', href: '/admin/settings', icon: Settings, permission: PERMISSIONS.SETTINGS_MANAGE },
+  { label: 'Committee Management', href: '/admin/committee', icon: Users, superAdminOnly: true },
   { label: 'Database', href: '/admin/database', icon: Settings, permission: PERMISSIONS.DB_BACKUP_RESTORE },
   { label: 'Security', href: '/admin/security', icon: ShieldCheck, permission: PERMISSIONS.DB_SECURITY_MANAGE },
 ];
@@ -82,9 +83,11 @@ export function AdminLayout() {
           {/* Navigation */}
           <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
             {adminLinks.filter(link => {
+              const state = useAuthStore.getState();
+              if ((link as any).superAdminOnly && state.user?.role !== 'SUPER_ADMIN') return false;
               if (!link.permission) return true;
               if (Array.isArray(link.permission)) {
-                return link.permission.some(p => useAuthStore.getState().hasPermission(p));
+                return link.permission.some(p => state.hasPermission(p));
               }
               return useAuthStore.getState().hasPermission(link.permission);
             }).map((link) => {
