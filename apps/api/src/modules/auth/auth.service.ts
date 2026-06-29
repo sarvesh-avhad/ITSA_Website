@@ -44,6 +44,10 @@ class AuthService {
     // Hash password
     const passwordHash = await bcrypt.hash(data.password, AUTH.BCRYPT_ROUNDS);
 
+    // If this is the very first user in the database, make them SUPER_ADMIN
+    const totalUsersCount = await prisma.user.count();
+    const assignedRole = totalUsersCount === 0 ? 'SUPER_ADMIN' : 'STUDENT';
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -58,7 +62,7 @@ class AuthService {
         year: data.year,
         college: data.college,
         customCollege: data.customCollege,
-        role: 'STUDENT',
+        role: assignedRole,
       },
     });
 
