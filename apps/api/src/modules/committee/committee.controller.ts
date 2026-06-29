@@ -15,6 +15,11 @@ const assignmentSchema = z.object({
   displayOrder: z.number().int().min(0).default(0),
 });
 
+const reorderSchema = z.array(z.object({
+  userId: z.string(),
+  displayOrder: z.number().int().min(0),
+})).min(1);
+
 export const getAssignedMembers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const assignments = await prisma.committeeAssignment.findMany({
@@ -148,6 +153,48 @@ export const deleteCommitteeAssignment = async (req: Request, res: Response, nex
 
     res.json({ success: true, data: { message: 'Committee assignment deleted successfully' } });
   } catch (err) {
+    next(err);
+  }
+};
+
+export const reorderCommittee = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validatedData = reorderSchema.parse(req.body);
+
+    await prisma.$transaction(
+      validatedData.map((item) =>
+        prisma.committeeAssignment.update({
+          where: { userId: item.userId },
+          data: { displayOrder: item.displayOrder },
+        })
+      )
+    );
+
+    // Get the committee name from the first item to include in the audit log (optional but helpful)
+    let committeeName = 'Unknown';
+    if (validatedData.length > 0) {
+      const firstAssignment = await prisma.committeeAssignment.findUnique({
+        where: { userId: validatedData[0].userId },
+        select: { committee: true }
+      });
+      if (firstAssignment) {
+        committeeName = firstAssignment.committee;
+      }
+    }
+
+    await createAuditLog(req, {
+      action: 'COMMITTEE_REORDERED',
+      resource: 'CommitteeAssignment',
+      resourceId: 'batch',
+      targetUserName: `${committeeName} Committee (${validatedData.length} members)`,
+    });
+
+    res.json({ success: true, data: { message: 'Committee reordered successfully' } });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      next(new ValidationError(err.errors[0].message, err.errors));
+      return;
+    }
     next(err);
   }
 };
