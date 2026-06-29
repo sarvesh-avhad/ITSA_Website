@@ -201,6 +201,7 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
     });
 
     if (user.role !== role) {
+      // Notify the user whose role was updated
       await NotificationService.send({
         userId: updatedUser.id,
         templateKey: 'ROLE_UPDATED',

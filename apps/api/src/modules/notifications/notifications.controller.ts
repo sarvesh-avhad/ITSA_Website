@@ -71,7 +71,27 @@ export const markAsRead = async (req: Request, res: Response, next: NextFunction
 export const markAllAsRead = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await NotificationService.markAllAsRead(req.user!.userId, req.user!.role as UserRole);
-    res.json({ success: true, data: { message: `Marked ${result.count} notifications as read`, count: result.count } });
+    res.json({ success: true, data: { message: `Marked notifications as read` } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const markAsUnread = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await NotificationService.markAsUnread(id, req.user!.userId);
+    res.json({ success: true, data: { message: 'Notification marked as unread' } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const hide = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    await NotificationService.hideNotification(id, req.user!.userId);
+    res.json({ success: true, data: { message: 'Notification hidden successfully' } });
   } catch (err) {
     next(err);
   }

@@ -7,6 +7,9 @@ import { prisma } from '@/lib/prisma';
 import { NotFoundError } from '@/lib/errors';
 import { createAuditLog } from '@/middleware/audit.middleware';
 
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationTemplate, NotificationSourceModule } from '@prisma/client';
+
 const router = Router();
 
 const contactSchema = z.object({
@@ -26,6 +29,14 @@ router.post('/', validate(contactSchema), async (req, res, next) => {
         userId: req.user?.userId || null,
       },
     });
+
+    await NotificationService.broadcast({
+      roles: ['ADMIN', 'SUPER_ADMIN'],
+      templateKey: NotificationTemplate.NEW_CONTACT_SUBMISSION,
+      sourceModule: NotificationSourceModule.CONTACT,
+      metadata: { name: contact.name, subject: contact.subject }
+    });
+
     res.status(201).json({ success: true, data: { id: contact.id, message: 'Message sent successfully' } });
   } catch (err) { next(err); }
 });
@@ -75,6 +86,15 @@ router.patch('/:id/status', authenticate, requireRole('ADMIN'), validate(statusS
       resourceId: message.id,
       newValue: { status },
     });
+
+    if (status === 'RESOLVED' && message.userId) {
+      await NotificationService.send({
+        userId: message.userId,
+        templateKey: NotificationTemplate.CONTACT_REPLY_SENT,
+        sourceModule: NotificationSourceModule.CONTACT,
+        metadata: { subject: message.subject }
+      });
+    }
 
     res.json({ success: true, data: message });
   } catch (err) { next(err); }

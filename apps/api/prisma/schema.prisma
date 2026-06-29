@@ -134,17 +134,25 @@ enum NotificationSourceModule {
 enum NotificationTemplate {
   WELCOME
   PASSWORD_RESET
+  PASSWORD_CHANGED
+  ROLE_UPDATED
   EVENT_CREATED
-  EVENT_UPDATED
   EVENT_CANCELLED
+  EVENT_DEADLINE_EXTENDED
   REGISTRATION_SUCCESS
+  TEAM_REGISTRATION_SUCCESS
   REGISTRATION_APPROVED
   REGISTRATION_REJECTED
   REGISTRATION_CANCELLED
+  NEW_REGISTRATION_RECEIVED
   CERTIFICATE_READY
-  ROLE_UPDATED
-  COMMITTEE_ASSIGNED
   ANNOUNCEMENT_CREATED
+  NEW_CONTACT_SUBMISSION
+  CONTACT_REPLY_SENT
+  BROADCAST_MESSAGE
+  SYSTEM_MAINTENANCE
+  SYSTEM_SECURITY_ALERT
+  SYSTEM_ERROR
 }
 
 // ============================================================
@@ -601,6 +609,9 @@ model Notification {
   expiresAt       DateTime?                 
   createdAt       DateTime                  @default(now())
   deletedAt       DateTime?                 
+
+  // Per-user hiding (soft delete for users)
+  hiddenBy        String[]                  @default([])
 
   reads           NotificationRead[]
   user            User?                     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -119,7 +119,7 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen pb-20">
-      <SEO title={event.title} description={event.shortDescription} />
+      <SEO title={event.title} description={event.shortDescription || undefined} />
       {/* Hero Banner Section */}
       <div className="relative pt-28 pb-20 overflow-hidden">
         {/* Background */}

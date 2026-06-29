@@ -26,8 +26,9 @@ export class EventsController {
     const data = req.body as CreateEventRequest;
     const event = await eventsService.create(data, req.user!.userId, req);
     
-    // Broadcast EVENT_CREATED globally
+    // Broadcast EVENT_CREATED only to ITSA_MEMBER
     await NotificationService.broadcast({
+      roles: ['ITSA_MEMBER'],
       templateKey: NotificationTemplate.EVENT_CREATED,
       sourceModule: NotificationSourceModule.EVENTS,
       metadata: { title: event.title, shortDescription: event.shortDescription, slug: event.slug }
@@ -38,30 +39,47 @@ export class EventsController {
 
   async update(req: Request, res: Response): Promise<void> {
     const data = req.body as UpdateEventRequest;
+    const oldEvent = await import('@/lib/prisma').then(m => m.prisma.event.findUnique({ where: { id: req.params.id as string } }));
+    
     const event = await eventsService.update(req.params.id as string, data, req);
     
-    // Broadcast EVENT_UPDATED globally
-    await NotificationService.broadcast({
-      templateKey: NotificationTemplate.EVENT_UPDATED,
-      sourceModule: NotificationSourceModule.EVENTS,
-      metadata: { title: event.title, slug: event.slug }
-    });
+    // If deadline was extended, notify everyone (or registered users)
+    if (oldEvent && data.registrationDeadline && new Date(data.registrationDeadline) > new Date(oldEvent.registrationDeadline || 0)) {
+       await NotificationService.broadcast({
+         roles: ['STUDENT'],
+         templateKey: NotificationTemplate.EVENT_DEADLINE_EXTENDED,
+         sourceModule: NotificationSourceModule.EVENTS,
+         metadata: { 
+           title: event.title, 
+           slug: event.slug, 
+           newDeadline: new Date(data.registrationDeadline).toLocaleDateString() 
+         }
+       });
+    }
 
     res.json({ success: true, data: event });
   }
 
   async delete(req: Request, res: Response): Promise<void> {
-    // Need to fetch event title/slug before deletion for the notification
-    const event = await import('@/lib/prisma').then(m => m.prisma.event.findUnique({ where: { id: req.params.id as string } }));
+    const prisma = await import('@/lib/prisma').then(m => m.prisma);
+    const event = await prisma.event.findUnique({ 
+      where: { id: req.params.id as string },
+      include: { registrations: { select: { userId: true } } }
+    });
     
     await eventsService.delete(req.params.id as string, req);
     
     if (event) {
-      await NotificationService.broadcast({
-        templateKey: NotificationTemplate.EVENT_CANCELLED,
-        sourceModule: NotificationSourceModule.EVENTS,
-        metadata: { title: event.title }
-      });
+      // Send individual notifications to registered users
+      const registeredUserIds = event.registrations.map(r => r.userId);
+      await Promise.all(registeredUserIds.map(userId => 
+        NotificationService.send({
+          userId,
+          templateKey: NotificationTemplate.EVENT_CANCELLED,
+          sourceModule: NotificationSourceModule.EVENTS,
+          metadata: { title: event.title }
+        })
+      ));
     }
 
     res.json({ success: true, data: { message: 'Event deleted successfully' } });

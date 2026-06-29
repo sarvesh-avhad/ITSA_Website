@@ -94,13 +94,6 @@ export const createCommitteeAssignment = async (req: Request, res: Response, nex
       targetUserName: `${user.firstName} ${user.lastName}`,
     });
 
-    await NotificationService.send({
-      userId,
-      templateKey: NotificationTemplate.COMMITTEE_ASSIGNED,
-      sourceModule: NotificationSourceModule.COMMITTEE,
-      metadata: { committee: assignment.committee, position: assignment.position }
-    });
-
     res.status(201).json({ success: true, data: assignment });
   } catch (err) {
     if (err instanceof z.ZodError) {

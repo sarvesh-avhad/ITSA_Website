@@ -20,8 +20,14 @@ router.get('/', authenticate, notificationsController.getUserNotifications);
 // Mark specific notification as read
 router.post('/read/:id', authenticate, notificationsController.markAsRead);
 
+// Mark specific notification as unread
+router.post('/unread/:id', authenticate, notificationsController.markAsUnread);
+
 // Mark all as read
 router.post('/read-all', authenticate, notificationsController.markAllAsRead);
+
+// Hide/Delete notification for user
+router.delete('/:id', authenticate, notificationsController.hide);
 
 // ============================================================
 // ADMIN ROUTES

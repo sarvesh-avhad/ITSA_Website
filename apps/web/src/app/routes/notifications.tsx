@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api } from '@/lib/api-client';
 import { format } from 'date-fns';
-import { Check, CheckCircle2, AlertTriangle, Info, Bell, PartyPopper, ShieldAlert, UserCog, CalendarPlus, CalendarClock, CalendarOff, TicketCheck, XCircle, Ban, Award, Users, Megaphone, BellRing } from 'lucide-react';
+import { Check, CheckCircle2, AlertTriangle, Info, Bell, PartyPopper, ShieldAlert, UserCog, CalendarPlus, CalendarClock, CalendarOff, TicketCheck, XCircle, Ban, Award, Users, Megaphone, BellRing, Trash2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
@@ -57,6 +57,34 @@ export default function NotificationsPage() {
       queryClient.setQueryData(['notifications', 'history', page], (old: any) => {
         if (!old) return old;
         return old.map((n: any) => n.id === id ? { ...n, isRead: true } : n);
+      });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'latest'] });
+    }
+  });
+
+  const markAsUnread = useMutation({
+    mutationFn: async (id: string) => {
+      await api.post(`/notifications/unread/${id}`);
+    },
+    onSuccess: (_, id) => {
+      queryClient.setQueryData(['notifications', 'history', page], (old: any) => {
+        if (!old) return old;
+        return old.map((n: any) => n.id === id ? { ...n, isRead: false } : n);
+      });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'latest'] });
+    }
+  });
+
+  const deleteNotification = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/notifications/${id}`);
+    },
+    onSuccess: (_, id) => {
+      queryClient.setQueryData(['notifications', 'history', page], (old: any) => {
+        if (!old) return old;
+        return old.filter((n: any) => n.id !== id);
       });
       queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
       queryClient.invalidateQueries({ queryKey: ['notifications', 'latest'] });
@@ -173,6 +201,34 @@ export default function NotificationsPage() {
                       {notification.actionLabel} &rarr;
                     </div>
                   )}
+                </div>
+
+                {/* Hover Actions */}
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 bg-black/40 backdrop-blur-md p-2 rounded-xl border border-white/10 shadow-xl">
+                  {notification.isRead ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); markAsUnread.mutate(notification.id); }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+                      title="Mark as unread"
+                    >
+                      <EyeOff size={16} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); markAsRead.mutate(notification.id); }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+                      title="Mark as read"
+                    >
+                      <Eye size={16} />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteNotification.mutate(notification.id); }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    title="Delete notification"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             ))}

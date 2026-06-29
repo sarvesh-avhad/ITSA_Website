@@ -40,7 +40,16 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
       };
     case NotificationTemplate.PASSWORD_RESET:
       return {
-        title: 'Password Changed',
+        title: 'Password Reset Requested',
+        message: 'A password reset was requested for your account. If you did not request this, ignore the email.',
+        iconKey: 'shield-alert',
+        type: NotificationType.INFO,
+        category: NotificationCategory.AUTH,
+        priority: NotificationPriority.HIGH,
+      };
+    case NotificationTemplate.PASSWORD_CHANGED:
+      return {
+        title: 'Password Changed Successfully',
         message: 'Your password was recently changed. If this wasn\'t you, please contact support immediately.',
         iconKey: 'shield-alert',
         type: NotificationType.WARNING,
@@ -51,12 +60,16 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
     // USERS
     case NotificationTemplate.ROLE_UPDATED:
       return {
-        title: 'Role Updated',
-        message: `Your account role has been updated from ${metadata.oldRole || 'Unknown'} to ${metadata.newRole || 'Unknown'}.`,
+        title: metadata.targetUserName 
+          ? `User Role Changed: ${metadata.targetUserName}` 
+          : 'Your Role Has Been Updated',
+        message: metadata.targetUserName 
+          ? `${metadata.targetUserName}'s role was changed from ${metadata.oldRole} to ${metadata.newRole} by ${metadata.updatedBy}.`
+          : `Your account role has been changed from ${metadata.oldRole} to ${metadata.newRole}.`,
         iconKey: 'user-cog',
         type: NotificationType.INFO,
         category: NotificationCategory.SYSTEM,
-        priority: NotificationPriority.URGENT,
+        priority: NotificationPriority.HIGH,
       };
 
     // EVENTS
@@ -71,17 +84,6 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
         actionUrl: `/events/${metadata.slug}`,
         actionLabel: 'View Event'
       };
-    case NotificationTemplate.EVENT_UPDATED:
-      return {
-        title: `Event Updated: ${metadata.title}`,
-        message: 'An event you are interested in has been updated. Please review the new details.',
-        iconKey: 'calendar-clock',
-        type: NotificationType.INFO,
-        category: NotificationCategory.EVENT,
-        priority: NotificationPriority.NORMAL,
-        actionUrl: `/events/${metadata.slug}`,
-        actionLabel: 'View Updates'
-      };
     case NotificationTemplate.EVENT_CANCELLED:
       return {
         title: `Event Cancelled: ${metadata.title}`,
@@ -91,6 +93,17 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
         category: NotificationCategory.EVENT,
         priority: NotificationPriority.URGENT,
       };
+    case NotificationTemplate.EVENT_DEADLINE_EXTENDED:
+      return {
+        title: `Registration Extended: ${metadata.title}`,
+        message: `Good news! The registration deadline for ${metadata.title} has been extended to ${metadata.newDeadline}.`,
+        iconKey: 'calendar-clock',
+        type: NotificationType.SUCCESS,
+        category: NotificationCategory.EVENT,
+        priority: NotificationPriority.NORMAL,
+        actionUrl: `/events/${metadata.slug}`,
+        actionLabel: 'Register Now'
+      };
 
     // REGISTRATIONS
     case NotificationTemplate.REGISTRATION_SUCCESS:
@@ -98,6 +111,17 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
         title: 'Registration Successful',
         message: `You have successfully registered for ${metadata.eventTitle}.`,
         iconKey: 'ticket-check',
+        type: NotificationType.SUCCESS,
+        category: NotificationCategory.REGISTRATION,
+        priority: NotificationPriority.HIGH,
+        actionUrl: `/events/${metadata.eventSlug}`,
+        actionLabel: 'View Event'
+      };
+    case NotificationTemplate.TEAM_REGISTRATION_SUCCESS:
+      return {
+        title: 'Team Registration Successful',
+        message: `Your team "${metadata.teamName}" has been successfully registered for ${metadata.eventTitle}.`,
+        iconKey: 'users',
         type: NotificationType.SUCCESS,
         category: NotificationCategory.REGISTRATION,
         priority: NotificationPriority.HIGH,
@@ -131,7 +155,18 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
         iconKey: 'ban',
         type: NotificationType.WARNING,
         category: NotificationCategory.REGISTRATION,
+        priority: NotificationPriority.HIGH,
+      };
+    case NotificationTemplate.NEW_REGISTRATION_RECEIVED:
+      return {
+        title: 'New Event Registration',
+        message: `${metadata.userName} just registered for ${metadata.eventTitle}.`,
+        iconKey: 'ticket-check',
+        type: NotificationType.INFO,
+        category: NotificationCategory.REGISTRATION,
         priority: NotificationPriority.NORMAL,
+        actionUrl: `/admin/events`,
+        actionLabel: 'View Registrations'
       };
 
     // CERTIFICATES
@@ -147,19 +182,6 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
         actionLabel: 'Download'
       };
 
-    // COMMITTEE
-    case NotificationTemplate.COMMITTEE_ASSIGNED:
-      return {
-        title: 'Committee Assigned',
-        message: `You have been assigned to the ${metadata.committee} committee as ${metadata.position}!`,
-        iconKey: 'users',
-        type: NotificationType.SUCCESS,
-        category: NotificationCategory.COMMITTEE,
-        priority: NotificationPriority.HIGH,
-        actionUrl: '/about',
-        actionLabel: 'View Committee'
-      };
-
     // ANNOUNCEMENTS
     case NotificationTemplate.ANNOUNCEMENT_CREATED:
       return {
@@ -169,8 +191,72 @@ export const getTemplateData = (template: NotificationTemplate, metadata: any = 
         type: NotificationType.INFO,
         category: NotificationCategory.ANNOUNCEMENT,
         priority: NotificationPriority.NORMAL,
-        actionUrl: `/announcements/${metadata.slug}`,
+        actionUrl: '/announcements',
         actionLabel: 'Read More'
+      };
+
+    // CONTACT
+    case NotificationTemplate.NEW_CONTACT_SUBMISSION:
+      return {
+        title: 'New Contact Form Submission',
+        message: `${metadata.name} sent a message regarding: ${metadata.subject}.`,
+        iconKey: 'users',
+        type: NotificationType.INFO,
+        category: NotificationCategory.CONTACT,
+        priority: NotificationPriority.NORMAL,
+        actionUrl: '/admin/contact',
+        actionLabel: 'View Message'
+      };
+    case NotificationTemplate.CONTACT_REPLY_SENT:
+      return {
+        title: 'Reply to Your Message',
+        message: `We have replied to your message regarding "${metadata.subject}". Please check your email.`,
+        iconKey: 'check-circle',
+        type: NotificationType.SUCCESS,
+        category: NotificationCategory.CONTACT,
+        priority: NotificationPriority.NORMAL,
+      };
+
+    // BROADCASTS
+    case NotificationTemplate.BROADCAST_MESSAGE:
+      return {
+        title: metadata.title || 'Important Broadcast',
+        message: metadata.message,
+        iconKey: 'megaphone',
+        type: NotificationType.INFO,
+        category: NotificationCategory.SYSTEM,
+        priority: metadata.priority || NotificationPriority.NORMAL,
+        actionUrl: metadata.actionUrl || undefined,
+        actionLabel: metadata.actionLabel || undefined
+      };
+
+    // SYSTEM
+    case NotificationTemplate.SYSTEM_MAINTENANCE:
+      return {
+        title: 'System Maintenance Scheduled',
+        message: metadata.message || 'The platform will undergo maintenance soon. Expect brief downtime.',
+        iconKey: 'user-cog',
+        type: NotificationType.WARNING,
+        category: NotificationCategory.SYSTEM,
+        priority: NotificationPriority.URGENT,
+      };
+    case NotificationTemplate.SYSTEM_SECURITY_ALERT:
+      return {
+        title: 'Security Alert',
+        message: metadata.message || 'A security event has been detected on your account or the platform.',
+        iconKey: 'shield-alert',
+        type: NotificationType.ERROR,
+        category: NotificationCategory.SYSTEM,
+        priority: NotificationPriority.URGENT,
+      };
+    case NotificationTemplate.SYSTEM_ERROR:
+      return {
+        title: 'System Error / Alert',
+        message: metadata.message || 'An internal system error has occurred.',
+        iconKey: 'shield-alert',
+        type: NotificationType.ERROR,
+        category: NotificationCategory.SYSTEM,
+        priority: NotificationPriority.URGENT,
       };
 
     default:
@@ -287,6 +373,7 @@ export class NotificationService {
         deletedAt: null,
         isArchived: false,
         sendAt: { lte: now },
+        NOT: { hiddenBy: { has: userId } },
         OR: [
           { expiresAt: null },
           { expiresAt: { gt: now } }
@@ -333,6 +420,7 @@ export class NotificationService {
         deletedAt: null,
         isArchived: false,
         sendAt: { lte: now },
+        NOT: { hiddenBy: { has: userId } },
         OR: [
           { expiresAt: null },
           { expiresAt: { gt: now } }
@@ -367,6 +455,29 @@ export class NotificationService {
       create: {
         notificationId,
         userId
+      }
+    });
+  }
+
+  /**
+   * Mark a single notification as unread
+   */
+  static async markAsUnread(notificationId: string, userId: string) {
+    return prisma.notificationRead.deleteMany({
+      where: { notificationId, userId }
+    });
+  }
+
+  /**
+   * Hide a notification for a user
+   */
+  static async hideNotification(notificationId: string, userId: string) {
+    // Note: Due to lack of strongly typed generated client in dev without restart,
+    // we use a direct update, assuming hiddenBy exists.
+    return prisma.notification.update({
+      where: { id: notificationId },
+      data: {
+        hiddenBy: { push: userId }
       }
     });
   }

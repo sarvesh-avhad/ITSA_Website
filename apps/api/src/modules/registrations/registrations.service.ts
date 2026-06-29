@@ -128,6 +128,13 @@ class RegistrationsService {
       metadata: { eventTitle: registration.event.title, eventSlug: registration.event.slug }
     });
 
+    await NotificationService.broadcast({
+      roles: ['ADMIN', 'SUPER_ADMIN'],
+      templateKey: NotificationTemplate.NEW_REGISTRATION_RECEIVED,
+      sourceModule: NotificationSourceModule.REGISTRATIONS,
+      metadata: { eventTitle: registration.event.title, userName: `${registration.user.firstName} ${registration.user.lastName || ''}`.trim() }
+    });
+
     return { ...registration, qrCodeDataUrl };
   }
 
@@ -292,9 +299,16 @@ class RegistrationsService {
 
     await NotificationService.send({
       userId,
-      templateKey: NotificationTemplate.REGISTRATION_SUCCESS,
+      templateKey: NotificationTemplate.TEAM_REGISTRATION_SUCCESS,
       sourceModule: NotificationSourceModule.REGISTRATIONS,
-      metadata: { eventTitle: result.registration.event.title, eventSlug: event.slug }
+      metadata: { eventTitle: result.registration.event.title, eventSlug: event.slug, teamName: data.teamName }
+    });
+
+    await NotificationService.broadcast({
+      roles: ['ADMIN', 'SUPER_ADMIN'],
+      templateKey: NotificationTemplate.NEW_REGISTRATION_RECEIVED,
+      sourceModule: NotificationSourceModule.REGISTRATIONS,
+      metadata: { eventTitle: result.registration.event.title, userName: `${result.registration.user.firstName} (Team: ${data.teamName})` }
     });
 
     return result;

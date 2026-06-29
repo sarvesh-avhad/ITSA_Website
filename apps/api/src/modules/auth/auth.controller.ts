@@ -86,10 +86,10 @@ export class AuthController {
         targetUserEmail: targetUser.email,
       });
 
-      // Fire Password Reset Notification
+      // Fire Password Changed Notification
       await NotificationService.send({
         userId: targetUser.id,
-        templateKey: NotificationTemplate.PASSWORD_RESET,
+        templateKey: NotificationTemplate.PASSWORD_CHANGED,
         sourceModule: NotificationSourceModule.AUTH
       });
     }

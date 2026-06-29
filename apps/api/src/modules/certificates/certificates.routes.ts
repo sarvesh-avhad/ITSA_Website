@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma';
 import { NotFoundError } from '@/lib/errors';
 import { createAuditLog } from '@/middleware/audit.middleware';
 import { nanoid } from 'nanoid';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationTemplate, NotificationSourceModule } from '@prisma/client';
 
 const router = Router();
 
@@ -91,6 +93,15 @@ router.post('/issue', authenticate, requireRole('ADMIN'), validate(issueCertSche
         })
       )
     );
+
+    await Promise.all(certificates.map(cert => 
+      NotificationService.send({
+        userId: cert.userId,
+        templateKey: NotificationTemplate.CERTIFICATE_READY,
+        sourceModule: NotificationSourceModule.CERTIFICATES,
+        metadata: { eventTitle: event.title, certificateId: cert.certificateId }
+      })
+    ));
 
     await createAuditLog(req, {
       action: 'CERTIFICATE_ISSUED',
