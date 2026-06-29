@@ -7,6 +7,8 @@ import { NotFoundError } from '@/lib/errors';
 import { createAuditLog } from '@/middleware/audit.middleware';
 import { PAGINATION } from '@itsa/shared';
 import slugify from 'slugify';
+import { NotificationTemplate, NotificationSourceModule } from '@prisma/client';
+import { NotificationService } from '../notifications/notifications.service';
 
 const router = Router();
 
@@ -67,6 +69,15 @@ router.post('/', authenticate, requirePermission(PERMISSIONS.ANNOUNCEMENTS_CREAT
       resourceId: announcement.id,
       newValue: { title: announcement.title }
     });
+
+    if (announcement.isPublished) {
+      await NotificationService.broadcast({
+        templateKey: NotificationTemplate.ANNOUNCEMENT_CREATED,
+        sourceModule: NotificationSourceModule.ANNOUNCEMENTS,
+        metadata: { title: announcement.title, slug: announcement.slug }
+      });
+    }
+
     res.status(201).json({ success: true, data: announcement });
   } catch (err) { next(err); }
 });

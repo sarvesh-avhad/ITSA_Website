@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { createAuditLog } from '@/middleware/audit.middleware';
 import { z } from 'zod';
 import { NotFoundError, ValidationError } from '@/lib/errors';
-import { CommitteeType } from '@prisma/client';
+import { CommitteeType, NotificationTemplate, NotificationSourceModule } from '@prisma/client';
+import { NotificationService } from '../notifications/notifications.service';
 
 const assignmentSchema = z.object({
   committee: z.nativeEnum(CommitteeType),
@@ -91,6 +92,13 @@ export const createCommitteeAssignment = async (req: Request, res: Response, nex
       resource: 'CommitteeAssignment',
       resourceId: assignment.id,
       targetUserName: `${user.firstName} ${user.lastName}`,
+    });
+
+    await NotificationService.send({
+      userId,
+      templateKey: NotificationTemplate.COMMITTEE_ASSIGNED,
+      sourceModule: NotificationSourceModule.COMMITTEE,
+      metadata: { committee: assignment.committee, position: assignment.position }
     });
 
     res.status(201).json({ success: true, data: assignment });

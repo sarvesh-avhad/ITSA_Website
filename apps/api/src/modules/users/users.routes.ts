@@ -3,6 +3,7 @@ import { authenticate, requireRole } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 import { NotFoundError } from '@/lib/errors';
 import { createAuditLog } from '@/middleware/audit.middleware';
+import { NotificationService } from '../notifications/notifications.service';
 
 const router = Router();
 
@@ -198,6 +199,15 @@ router.patch('/:id/role', authenticate, requireRole('ADMIN'), async (req, res, n
       oldValue: { role: user.role },
       newValue: { role },
     });
+
+    if (user.role !== role) {
+      await NotificationService.send({
+        userId: updatedUser.id,
+        templateKey: 'ROLE_UPDATED',
+        sourceModule: 'USERS',
+        metadata: { oldRole: user.role, newRole: role }
+      });
+    }
 
     res.json({ success: true, data: updatedUser });
   } catch (err) { next(err); }

@@ -2,6 +2,9 @@ import type { Request, Response } from 'express';
 import { eventsService } from './events.service';
 import type { CreateEventRequest, UpdateEventRequest, EventFilters } from '@itsa/shared';
 
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationTemplate, NotificationSourceModule } from '@prisma/client';
+
 export class EventsController {
   async list(req: Request, res: Response): Promise<void> {
     const filters = req.query as unknown as EventFilters;
@@ -22,17 +25,45 @@ export class EventsController {
   async create(req: Request, res: Response): Promise<void> {
     const data = req.body as CreateEventRequest;
     const event = await eventsService.create(data, req.user!.userId, req);
+    
+    // Broadcast EVENT_CREATED globally
+    await NotificationService.broadcast({
+      templateKey: NotificationTemplate.EVENT_CREATED,
+      sourceModule: NotificationSourceModule.EVENTS,
+      metadata: { title: event.title, shortDescription: event.shortDescription, slug: event.slug }
+    });
+
     res.status(201).json({ success: true, data: event });
   }
 
   async update(req: Request, res: Response): Promise<void> {
     const data = req.body as UpdateEventRequest;
     const event = await eventsService.update(req.params.id as string, data, req);
+    
+    // Broadcast EVENT_UPDATED globally
+    await NotificationService.broadcast({
+      templateKey: NotificationTemplate.EVENT_UPDATED,
+      sourceModule: NotificationSourceModule.EVENTS,
+      metadata: { title: event.title, slug: event.slug }
+    });
+
     res.json({ success: true, data: event });
   }
 
   async delete(req: Request, res: Response): Promise<void> {
+    // Need to fetch event title/slug before deletion for the notification
+    const event = await import('@/lib/prisma').then(m => m.prisma.event.findUnique({ where: { id: req.params.id as string } }));
+    
     await eventsService.delete(req.params.id as string, req);
+    
+    if (event) {
+      await NotificationService.broadcast({
+        templateKey: NotificationTemplate.EVENT_CANCELLED,
+        sourceModule: NotificationSourceModule.EVENTS,
+        metadata: { title: event.title }
+      });
+    }
+
     res.json({ success: true, data: { message: 'Event deleted successfully' } });
   }
 

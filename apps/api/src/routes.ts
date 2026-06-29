@@ -15,6 +15,7 @@ import { redis } from '@/lib/redis';
 import uploadRoutes from '@/modules/upload/upload.routes';
 import auditRoutes from '@/modules/audit/audit.routes';
 import committeeRoutes from '@/modules/committee/committee.routes';
+import notificationRoutes from '@/modules/notifications/notifications.routes';
 
 export const apiRouter = Router();
 
@@ -82,3 +83,4 @@ apiRouter.use('/upload', uploadRoutes);
 apiRouter.use('/admin/users', usersRoutes);
 apiRouter.use('/admin/audit-logs', auditRoutes);
 apiRouter.use('/committee', committeeRoutes);
+apiRouter.use('/notifications', notificationRoutes);

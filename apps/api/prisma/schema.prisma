@@ -83,6 +83,71 @@ enum ContactStatus {
 
 
 // ============================================================
+// NOTIFICATION ENUMS
+// ============================================================
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum NotificationCategory {
+  AUTH
+  EVENT
+  REGISTRATION
+  ANNOUNCEMENT
+  CERTIFICATE
+  COMMITTEE
+  SYSTEM
+  GALLERY
+  CONTACT
+}
+
+enum NotificationRecipientType {
+  USER
+  ROLE
+  GLOBAL
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum NotificationSourceModule {
+  AUTH
+  USERS
+  EVENTS
+  REGISTRATIONS
+  ANNOUNCEMENTS
+  COMMITTEE
+  GALLERY
+  CERTIFICATES
+  CONTACT
+  SYSTEM
+}
+
+enum NotificationTemplate {
+  WELCOME
+  PASSWORD_RESET
+  EVENT_CREATED
+  EVENT_UPDATED
+  EVENT_CANCELLED
+  REGISTRATION_SUCCESS
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  REGISTRATION_CANCELLED
+  CERTIFICATE_READY
+  ROLE_UPDATED
+  COMMITTEE_ASSIGNED
+  ANNOUNCEMENT_CREATED
+}
+
+// ============================================================
 // MODELS
 // ============================================================
 
@@ -120,6 +185,9 @@ model User {
   certificates  Certificate[]
   contacts      Contact[]
   committeeAssignment CommitteeAssignment?
+  
+  notifications Notification[]
+  notificationReads NotificationRead[]
 
   @@index([email])
   @@index([prn])
@@ -497,4 +565,64 @@ model CommitteeAssignment {
   user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("committee_assignments")
+}
+
+// ============================================================
+// NOTIFICATION SYSTEM
+// ============================================================
+
+model Notification {
+  id              String                    @id @default(cuid())
+  recipientType   NotificationRecipientType @default(USER)
+  
+  // Targets
+  userId          String?                   // Populated if USER
+  targetRoles     UserRole[]                @default([]) // Populated if ROLE
+  
+  // Content
+  templateKey     NotificationTemplate      
+  templateVersion Int                       @default(1)
+  sourceModule    NotificationSourceModule  
+  title           String
+  message         String                    @db.Text
+  iconKey         String?                   // e.g. "calendar", "award", "megaphone"
+  type            NotificationType          @default(INFO)
+  category        NotificationCategory      @default(SYSTEM)
+  priority        NotificationPriority      @default(NORMAL)
+  metadata        Json?                     
+  
+  // Actions
+  actionUrl       String?
+  actionLabel     String?                   
+  
+  // Lifecycle
+  isArchived      Boolean                   @default(false)
+  sendAt          DateTime                  @default(now())
+  expiresAt       DateTime?                 
+  createdAt       DateTime                  @default(now())
+  deletedAt       DateTime?                 
+
+  reads           NotificationRead[]
+  user            User?                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sendAt])
+  @@index([isArchived])
+  @@index([deletedAt])
+  @@index([priority])
+  @@index([sourceModule])
+  @@map("notifications")
+}
+
+model NotificationRead {
+  id              String       @id @default(cuid())
+  notificationId  String
+  userId          String
+  readAt          DateTime     @default(now())
+
+  notification    Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@map("notification_reads")
 }

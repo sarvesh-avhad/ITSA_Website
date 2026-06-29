@@ -3,11 +3,21 @@ import { createAuditLog } from '@/middleware/audit.middleware';
 import { prisma } from '@/lib/prisma';
 import { authService } from './auth.service';
 import type { LoginRequest, RegisterRequest } from '@itsa/shared';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationTemplate, NotificationSourceModule } from '@prisma/client';
 
 export class AuthController {
   async register(req: Request, res: Response): Promise<void> {
     const data = req.body as RegisterRequest;
     const result = await authService.register(data, req);
+    
+    // Fire Welcome Notification
+    await NotificationService.send({
+      userId: result.user.id,
+      templateKey: NotificationTemplate.WELCOME,
+      sourceModule: NotificationSourceModule.AUTH
+    });
+
     res.status(201).json({ success: true, data: result });
   }
 
@@ -65,15 +75,24 @@ export class AuthController {
     const targetUserId = await authService.resetPassword(req.body.token, req.body.password);
     const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
 
-    await createAuditLog(req, {
-      action: 'PASSWORD_RESET_COMPLETED',
-      severity: 'WARNING',
-      resource: 'User',
-      resourceId: targetUserId,
-      targetUserId,
-      targetUserName: targetUser ? `${targetUser.firstName} ${targetUser.lastName || ''}`.trim() : undefined,
-      targetUserEmail: targetUser ? targetUser.email : undefined,
-    });
+    if (targetUser) {
+      await createAuditLog(req, {
+        action: 'PASSWORD_RESET_COMPLETED',
+        severity: 'WARNING',
+        resource: 'User',
+        resourceId: targetUserId,
+        targetUserId,
+        targetUserName: `${targetUser.firstName} ${targetUser.lastName || ''}`.trim(),
+        targetUserEmail: targetUser.email,
+      });
+
+      // Fire Password Reset Notification
+      await NotificationService.send({
+        userId: targetUser.id,
+        templateKey: NotificationTemplate.PASSWORD_RESET,
+        sourceModule: NotificationSourceModule.AUTH
+      });
+    }
 
     res.json({ success: true, data: { message: 'Password reset successfully' } });
   }

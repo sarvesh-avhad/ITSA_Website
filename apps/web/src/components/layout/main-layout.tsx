@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ChevronDown, Search, LogOut, LayoutDashboard, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GlobalSearch } from './global-search';
+import { NotificationBell } from '../notifications/notification-bell';
 import { HelmetProvider } from 'react-helmet-async';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -119,6 +120,7 @@ export function MainLayout() {
 
             {isAuthenticated && user ? (
               <div className="hidden sm:flex items-center gap-2">
+                <NotificationBell />
                 {['ADMIN', 'ITSA_MEMBER', 'SUPER_ADMIN'].includes(user.role) && (
                   <Link
                     to="/admin"
@@ -154,13 +156,16 @@ export function MainLayout() {
               </Link>
             )}
 
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition-colors"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
+            <div className="flex items-center gap-2 lg:hidden">
+              {isAuthenticated && user && <NotificationBell />}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
+            </div>
           </div>
         </nav>
 

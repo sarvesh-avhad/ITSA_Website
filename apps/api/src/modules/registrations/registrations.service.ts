@@ -9,6 +9,8 @@ import { PAGINATION, CACHE_TTL, getRegistrationMode } from '@itsa/shared';
 import type { IndividualRegistrationRequest, TeamRegistrationRequest } from '@itsa/shared';
 import QRCode from 'qrcode';
 import { nanoid } from 'nanoid';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationTemplate, NotificationSourceModule } from '@prisma/client';
 
 class RegistrationsService {
   async registerIndividual(data: IndividualRegistrationRequest, userId: string, req: Request) {
@@ -117,6 +119,13 @@ class RegistrationsService {
       resource: 'Registration',
       resourceId: registration.id,
       newValue: { eventId: data.eventId, userId, eventName: registration.event.title, studentName: `${registration.user.firstName} ${registration.user.lastName || ''}`.trim() },
+    });
+
+    await NotificationService.send({
+      userId,
+      templateKey: NotificationTemplate.REGISTRATION_SUCCESS,
+      sourceModule: NotificationSourceModule.REGISTRATIONS,
+      metadata: { eventTitle: registration.event.title, eventSlug: registration.event.slug }
     });
 
     return { ...registration, qrCodeDataUrl };
@@ -281,6 +290,13 @@ class RegistrationsService {
       newValue: { teamName: data.teamName, eventId: data.eventId, memberCount: totalSize, eventName: result.registration.event.title, studentName: result.registration.user.firstName },
     });
 
+    await NotificationService.send({
+      userId,
+      templateKey: NotificationTemplate.REGISTRATION_SUCCESS,
+      sourceModule: NotificationSourceModule.REGISTRATIONS,
+      metadata: { eventTitle: result.registration.event.title, eventSlug: event.slug }
+    });
+
     return result;
   }
 
@@ -366,6 +382,13 @@ class RegistrationsService {
         seatsRestored: decrementAmount
       },
     });
+
+    await NotificationService.send({
+      userId,
+      templateKey: NotificationTemplate.REGISTRATION_CANCELLED,
+      sourceModule: NotificationSourceModule.REGISTRATIONS,
+      metadata: { eventTitle: registration.event.title, eventSlug: registration.event.slug }
+    });
   }
 
   async updateStatus(regId: string, status: string, req: Request) {
@@ -377,7 +400,7 @@ class RegistrationsService {
       data: { status: status as any },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true } },
-        event: { select: { title: true } },
+        event: { select: { title: true, slug: true } },
       },
     });
 
@@ -389,6 +412,15 @@ class RegistrationsService {
       oldValue: { status: registration.status },
       newValue: { status, eventName: updated.event.title, studentName: `${updated.user.firstName} ${updated.user.lastName || ''}`.trim() },
     });
+
+    if (status === 'APPROVED' || status === 'REJECTED') {
+      await NotificationService.send({
+        userId: updated.user.id,
+        templateKey: status === 'APPROVED' ? NotificationTemplate.REGISTRATION_APPROVED : NotificationTemplate.REGISTRATION_REJECTED,
+        sourceModule: NotificationSourceModule.REGISTRATIONS,
+        metadata: { eventTitle: updated.event.title, eventSlug: updated.event.slug }
+      });
+    }
 
     return updated;
   }
