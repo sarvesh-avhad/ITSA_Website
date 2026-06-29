@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@itsa/shared';
 import { cn, getDisplayName, getInitials } from '@/lib/utils';
 import { useState } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
+import { NotificationBell } from '../notifications/notification-bell';
 import { SEO } from '@/components/seo';
 
 const adminLinks = [
@@ -120,7 +121,7 @@ export function AdminLayout() {
           </div>
 
           <div className="p-4 border-t border-white/10">
-            <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10 mb-2">
+            <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10 mb-2 relative">
               <div className="w-8 h-8 rounded-full bg-violet-600/30 flex items-center justify-center text-violet-400 font-bold shrink-0 uppercase">
                 {getInitials((user as any).firstName || '', (user as any).lastName || '')}
               </div>
@@ -131,6 +132,9 @@ export function AdminLayout() {
                 <div className="text-[10px] text-violet-400 font-bold tracking-wider truncate">
                   {user.role.replace('_', ' ')}
                 </div>
+              </div>
+              <div className="shrink-0 -mr-2">
+                <NotificationBell />
               </div>
             </div>
             <Link
@@ -160,7 +164,10 @@ export function AdminLayout() {
             >
               <Menu size={24} />
             </button>
-            <div className="ml-auto font-bold text-white tracking-tight">Admin Panel</div>
+            <div className="ml-auto flex items-center gap-2">
+              <NotificationBell />
+              <div className="font-bold text-white tracking-tight ml-2">Admin Panel</div>
+            </div>
           </header>
 
           {/* Content Scroll Area */}

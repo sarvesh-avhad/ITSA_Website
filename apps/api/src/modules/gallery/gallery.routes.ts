@@ -100,7 +100,14 @@ router.get('/albums/:slug', async (req, res, next) => {
 // Create album
 router.post('/albums', authenticate, requirePermission(PERMISSIONS.GALLERY_CREATE), validate(createAlbumSchema), async (req, res, next) => {
   try {
-    const slug = slugify(req.body.title, { lower: true, strict: true });
+    let baseSlug = slugify(req.body.title, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
+    while (await prisma.galleryAlbum.findUnique({ where: { slug } })) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
     const album = await prisma.galleryAlbum.create({
       data: { ...req.body, slug, isPublished: true },
     });

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { cn, getDisplayName, getInitials } from '@/lib/utils';
 import { HelmetProvider } from 'react-helmet-async';
+import { NotificationBell } from '../notifications/notification-bell';
 
 const sidebarLinks = [
   { label: 'My Profile', href: '/dashboard', icon: UserIcon },
@@ -86,21 +87,24 @@ export function DashboardLayout() {
           </div>
 
           <div className="p-4 border-t border-border shrink-0">
-            <div className="glass-card rounded-xl p-3 mb-3 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-violet-600/20 flex items-center justify-center shrink-0 border border-violet-500/20 overflow-hidden">
+            <div className="flex items-center gap-3 px-3 py-3 mb-2 bg-white/5 rounded-xl border border-white/10 relative">
+              <div className="w-10 h-10 rounded-full bg-violet-600/20 border border-violet-500/20 flex items-center justify-center shrink-0 overflow-hidden">
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt={getDisplayName(user)} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-violet-400 font-bold text-xs">
-                    {getInitials(user.firstName || '', user.lastName || '')}
+                  <span className="text-violet-300 font-medium text-sm uppercase">
+                    {getInitials((user as any).firstName || '', (user as any).lastName || '')}
                   </span>
                 )}
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-white truncate">
                   {getDisplayName(user)}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+              </div>
+              <div className="shrink-0 -mr-2">
+                <NotificationBell />
               </div>
             </div>
             
@@ -126,12 +130,15 @@ export function DashboardLayout() {
             </div>
             <span className="font-bold text-lg text-white">Student Hub</span>
           </Link>
-          <button
-            onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-white/5"
-          >
-            {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+              className="p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-white/5"
+            >
+              {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Sidebar Overlay */}

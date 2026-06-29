@@ -23,6 +23,7 @@ import AnnouncementsPage from '@/app/routes/announcements';
 import AboutPage from '@/app/routes/about';
 import ContactPage from '@/app/routes/contact';
 import JoinItsaPage from '@/app/routes/join-itsa/index';
+import NotificationsPage from '@/app/routes/notifications';
 import AdminDashboardPage from '@/app/routes/admin/index';
 import AdminUsersPage from '@/app/routes/admin/users';
 import AdminEventsPage from '@/app/routes/admin/events';
@@ -124,6 +125,7 @@ export default function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/join-itsa" element={<JoinItsaPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
           </Route>
 
           {/* Auth routes without main layout */}
