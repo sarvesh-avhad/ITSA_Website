@@ -28,6 +28,7 @@ import AdminDashboardPage from '@/app/routes/admin/index';
 import AdminUsersPage from '@/app/routes/admin/users';
 import AdminEventsPage from '@/app/routes/admin/events';
 import AdminRegistrationsPage from '@/app/routes/admin/registrations';
+import EventRegistrationsPage from '@/app/routes/admin/registrations/[eventId]';
 import AdminGalleryPage from '@/app/routes/admin/gallery';
 import AdminContactsPage from '@/app/routes/admin/contacts';
 import AdminAnnouncementsPage from '@/app/routes/admin/announcements';
@@ -157,6 +158,7 @@ export default function App() {
             <Route path="users" element={<PermissionGuard permission={PERMISSIONS.USERS_READ}><AdminUsersPage /></PermissionGuard>} />
             <Route path="events" element={<PermissionGuard permission={[PERMISSIONS.EVENTS_CREATE, PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS]}><AdminEventsPage /></PermissionGuard>} />
             <Route path="registrations" element={<PermissionGuard permission={PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS}><AdminRegistrationsPage /></PermissionGuard>} />
+            <Route path="registrations/:eventId" element={<PermissionGuard permission={PERMISSIONS.EVENTS_MANAGE_REGISTRATIONS}><EventRegistrationsPage /></PermissionGuard>} />
             <Route path="gallery" element={<PermissionGuard permission={[PERMISSIONS.GALLERY_CREATE, PERMISSIONS.GALLERY_UPLOAD]}><AdminGalleryPage /></PermissionGuard>} />
             <Route path="contacts" element={<PermissionGuard permission={PERMISSIONS.CMS_UPDATE}><AdminContactsPage /></PermissionGuard>} />
             <Route path="announcements" element={<PermissionGuard permission={PERMISSIONS.ANNOUNCEMENTS_CREATE}><AdminAnnouncementsPage /></PermissionGuard>} />

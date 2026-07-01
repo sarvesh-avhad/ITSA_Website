@@ -440,20 +440,45 @@ class RegistrationsService {
   }
 
   async markAttendance(regId: string, req: Request) {
-    const registration = await prisma.registration.findUnique({ where: { id: regId } });
+    const registration = await prisma.registration.findUnique({
+      where: { id: regId },
+      include: {
+        event: { select: { title: true } }
+      }
+    });
     if (!registration) throw new NotFoundError('Registration');
     if (registration.attendanceMarked) throw new BadRequestError('Attendance already marked');
 
-    return prisma.registration.update({
+    const updated = await prisma.registration.update({
       where: { id: regId },
-      data: { attendanceMarked: true, attendanceAt: new Date() },
+      data: { 
+        attendanceMarked: true, 
+        attendanceAt: new Date(),
+        attendanceMarkedById: req.user?.userId || null
+      },
     });
+
+    await createAuditLog(req, {
+      action: 'ATTENDANCE_MARKED_MANUALLY',
+      severity: 'INFO',
+      resource: 'Registration',
+      resourceId: regId,
+      newValue: { attendanceMarked: true, eventName: registration.event.title },
+    });
+
+    return updated;
   }
 
-  async getAllRegistrations(page: number, limit: number, search: string, user: import('@itsa/shared').JwtPayload) {
+  async getAllRegistrations(page: number, limit: number, search: string, user: import('@itsa/shared').JwtPayload, eventId?: string) {
     const skip = (page - 1) * limit;
     
-    const where: any = {};
+    const where: any = {
+      deletedAt: null // Only show active registrations
+    };
+    
+    if (eventId) {
+      where.eventId = eventId;
+    }
     
     if (search) {
       where.OR = [
@@ -474,6 +499,7 @@ class RegistrationsService {
         include: {
           user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
           event: { select: { id: true, title: true, slug: true } },
+          attendanceMarkedBy: { select: { id: true, firstName: true, lastName: true } },
           team: {
             include: {
               leader: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
@@ -499,8 +525,89 @@ class RegistrationsService {
     };
   }
 
-  async exportAllRegistrations(search: string | undefined) {
-    const where: any = {};
+  async getEventsSummary() {
+    const events = await prisma.event.findMany({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        startDate: true,
+        status: true,
+        _count: {
+          select: {
+            registrations: { where: { deletedAt: null } }
+          }
+        }
+      },
+      orderBy: { startDate: 'desc' }
+    });
+
+    // To get attendees count we need to fetch group by or just a count query.
+    // We can run a parallel count for attendees for each event.
+    const eventsWithAttendees = await Promise.all(
+      events.map(async (event) => {
+        const attendeesCount = await prisma.registration.count({
+          where: { eventId: event.id, deletedAt: null, attendanceMarked: true }
+        });
+        return {
+          ...event,
+          attendeesCount
+        };
+      })
+    );
+
+    return eventsWithAttendees;
+  }
+
+  async getEventStats(eventId: string) {
+    const [total, attendees] = await Promise.all([
+      prisma.registration.count({ where: { eventId, deletedAt: null } }),
+      prisma.registration.count({ where: { eventId, deletedAt: null, attendanceMarked: true } }),
+    ]);
+
+    return {
+      total,
+      attendees,
+      remaining: total - attendees,
+      attendancePercentage: total > 0 ? Math.round((attendees / total) * 100) : 0,
+    };
+  }
+
+  async adminDeleteRegistration(regId: string, req: Request) {
+    const registration = await prisma.registration.findUnique({
+      where: { id: regId },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true } },
+        event: { select: { title: true } }
+      }
+    });
+
+    if (!registration) throw new NotFoundError('Registration');
+
+    await prisma.registration.update({
+      where: { id: regId },
+      data: { deletedAt: new Date(), status: 'CANCELLED' }
+    });
+
+    await createAuditLog(req, {
+      action: 'REGISTRATION_DELETED',
+      severity: 'WARNING',
+      resource: 'Registration',
+      resourceId: regId,
+      targetUserId: registration.userId,
+      targetUserName: `${registration.user.firstName} ${registration.user.lastName || ''}`.trim(),
+      oldValue: { status: registration.status, eventName: registration.event.title }
+    });
+  }
+
+  async exportAllRegistrations(search: string | undefined, eventId?: string) {
+    const where: any = { deletedAt: null };
+    
+    if (eventId) {
+      where.eventId = eventId;
+    }
+    
     if (search) {
       const searchStr = String(search);
       where.OR = [
@@ -583,11 +690,11 @@ class RegistrationsService {
     return { flatData, columns };
   }
 
-  async scanRegistration(qrCode: string, req: Request) {
+  async scanRegistration(qrCode: string, req: Request, targetEventId?: string) {
     if (!qrCode) throw new BadRequestError('QR Code is required');
 
     const registration = await prisma.registration.findFirst({
-      where: { qrCode },
+      where: { qrCode, deletedAt: null },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true } },
         event: { select: { id: true, title: true } },
@@ -595,6 +702,10 @@ class RegistrationsService {
     });
 
     if (!registration) throw new NotFoundError('Invalid QR Code');
+    
+    if (targetEventId && registration.eventId !== targetEventId) {
+      throw new BadRequestError(`This QR code belongs to a different event (${registration.event.title}).`);
+    }
     
     if (registration.status !== 'APPROVED') {
       throw new BadRequestError(`Registration is ${registration.status}. Cannot mark attendance.`);
@@ -606,7 +717,11 @@ class RegistrationsService {
 
     const updated = await prisma.registration.update({
       where: { id: registration.id },
-      data: { attendanceMarked: true, attendanceAt: new Date() },
+      data: { 
+        attendanceMarked: true, 
+        attendanceAt: new Date(),
+        attendanceMarkedById: req.user?.userId || null 
+      },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true } },
         event: { select: { id: true, title: true } },
@@ -614,11 +729,11 @@ class RegistrationsService {
     });
 
     await createAuditLog(req, {
-      action: 'REGISTRATION_UPDATED',
+      action: 'ATTENDANCE_MARKED_VIA_QR',
       severity: 'INFO',
       resource: 'Registration',
       resourceId: registration.id,
-      newValue: { attendanceMarked: true },
+      newValue: { attendanceMarked: true, eventName: registration.event.title },
     });
 
     return updated;
