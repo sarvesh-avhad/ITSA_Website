@@ -449,14 +449,20 @@ class RegistrationsService {
     if (!registration) throw new NotFoundError('Registration');
     if (registration.attendanceMarked) throw new BadRequestError('Attendance already marked');
 
-    const updated = await prisma.registration.update({
-      where: { id: regId },
+    const updateResult = await prisma.registration.updateMany({
+      where: { id: regId, attendanceMarked: false },
       data: { 
         attendanceMarked: true, 
         attendanceAt: new Date(),
         attendanceMarkedById: req.user?.userId || null
       },
     });
+
+    if (updateResult.count === 0) {
+      throw new ConflictError('Attendance was already marked by another user.');
+    }
+
+    const updated = await prisma.registration.findUnique({ where: { id: regId } });
 
     await createAuditLog(req, {
       action: 'ATTENDANCE_MARKED_MANUALLY',
@@ -624,6 +630,7 @@ class RegistrationsService {
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
         event: { select: { id: true, title: true, slug: true } },
+        attendanceMarkedBy: { select: { firstName: true, lastName: true, email: true } },
         team: {
           include: {
             leader: { select: { id: true, firstName: true, lastName: true, email: true, prn: true, year: true, branch: true, phone: true } },
@@ -645,7 +652,9 @@ class RegistrationsService {
         'Registration Type': isTeam ? 'TEAM' : 'INDIVIDUAL',
         'Registration Date': reg.createdAt.toISOString(),
         'Status': reg.status,
-        'Attendance Marked': reg.attendanceMarked ? 'Yes' : 'No',
+        'Attendance Status': reg.attendanceMarked ? 'Attended' : 'Not Attended',
+        'Marked By': reg.attendanceMarkedBy ? `${reg.attendanceMarkedBy.firstName} ${reg.attendanceMarkedBy.lastName} (${reg.attendanceMarkedBy.email})` : (reg.attendanceMarked ? 'System / QR' : ''),
+        'Marked At': reg.attendanceAt ? reg.attendanceAt.toISOString() : '',
       };
 
       if (isTeam && reg.team) {
@@ -683,7 +692,9 @@ class RegistrationsService {
       { header: 'Member 3', key: 'Member 3', width: 35 },
       { header: 'Member 4', key: 'Member 4', width: 35 },
       { header: 'Status', key: 'Status', width: 15 },
-      { header: 'Attendance Marked', key: 'Attendance Marked', width: 15 },
+      { header: 'Attendance Status', key: 'Attendance Status', width: 15 },
+      { header: 'Marked By', key: 'Marked By', width: 25 },
+      { header: 'Marked At', key: 'Marked At', width: 25 },
       { header: 'Registration Date', key: 'Registration Date', width: 25 },
     ];
 
@@ -715,13 +726,21 @@ class RegistrationsService {
       throw new ConflictError('Attendance has already been marked for this pass');
     }
 
-    const updated = await prisma.registration.update({
-      where: { id: registration.id },
+    const updateResult = await prisma.registration.updateMany({
+      where: { id: registration.id, attendanceMarked: false },
       data: { 
         attendanceMarked: true, 
         attendanceAt: new Date(),
         attendanceMarkedById: req.user?.userId || null 
-      },
+      }
+    });
+
+    if (updateResult.count === 0) {
+      throw new ConflictError('Attendance was already marked by another user.');
+    }
+
+    const updated = await prisma.registration.findUnique({
+      where: { id: registration.id },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true, prn: true } },
         event: { select: { id: true, title: true } },
