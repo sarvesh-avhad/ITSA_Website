@@ -20,5 +20,14 @@ const storage = new CloudinaryStorage({
   } as any,
 });
 
+const rawStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'itsa_certificates',
+    resource_type: 'raw',
+  } as any,
+});
+
 export const upload = multer({ storage: storage });
+export const uploadRaw = multer({ storage: rawStorage });
 export { cloudinary };

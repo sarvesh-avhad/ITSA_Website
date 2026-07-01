@@ -20,6 +20,7 @@ const adminLinks = [
   { label: 'Sponsors', href: '/admin/sponsors', icon: Star, permission: PERMISSIONS.SPONSORS_CREATE },
   { label: 'Contacts', href: '/admin/contacts', icon: Mail, permission: PERMISSIONS.CMS_UPDATE },
   { label: 'Certificates', href: '/admin/certificates', icon: Award, permission: PERMISSIONS.CERTIFICATES_GENERATE },
+  { label: 'Certificate Templates', href: '/admin/certificates/templates', icon: LayoutDashboard, permission: PERMISSIONS.EVENTS_CREATE },
   { label: 'Audit Logs', href: '/admin/audit-logs', icon: FileText, permission: PERMISSIONS.AUDIT_LOGS_READ },
   { label: 'Settings', href: '/admin/settings', icon: Settings, permission: PERMISSIONS.SETTINGS_MANAGE },
   { label: 'Committee Management', href: '/admin/committee', icon: Users, superAdminOnly: true },
@@ -92,7 +93,11 @@ export function AdminLayout() {
               }
               return useAuthStore.getState().hasPermission(link.permission);
             }).map((link) => {
-              const isActive = location.pathname === link.href || (link.href !== '/admin' && location.pathname.startsWith(link.href));
+              const isActive = link.href === '/admin' 
+                ? location.pathname === '/admin'
+                : link.href === '/admin/certificates'
+                  ? location.pathname === '/admin/certificates'
+                  : location.pathname.startsWith(link.href);
               const Icon = link.icon;
               return (
                 <Link

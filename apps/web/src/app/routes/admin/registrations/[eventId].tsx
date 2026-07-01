@@ -13,6 +13,7 @@ import { QRScanner } from '@/components/admin/qr-scanner';
 import { ExportButton } from '@/components/ui/ExportButton';
 import { getDisplayName, getInitials } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
+import { EventCertificatesManager } from '@/components/admin/certificates/EventCertificatesManager';
 
 const fetchEventStats = async (eventId: string) => {
   const { data } = await apiClient.get(`/registrations/stats?eventId=${eventId}`);
@@ -31,7 +32,7 @@ export default function EventRegistrationsPage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'REGISTERED' | 'ATTENDEES'>('REGISTERED');
+  const [activeTab, setActiveTab] = useState<'REGISTERED' | 'ATTENDEES' | 'CERTIFICATES'>('REGISTERED');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [selectedReg, setSelectedReg] = useState<any>(null);
   
@@ -182,31 +183,41 @@ export default function EventRegistrationsPage() {
             >
               Attendees
             </button>
-          </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-muted-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
-              />
-            </div>
-            <ExportButton endpoint="/registrations/export" queryParams={{ search, eventId }} filename="event_registrations" />
             <button
-              onClick={() => setIsScannerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors font-medium whitespace-nowrap"
+              onClick={() => setActiveTab('CERTIFICATES')}
+              className={cn("px-4 py-1.5 rounded-lg text-sm font-medium transition-all w-full sm:w-auto", activeTab === 'CERTIFICATES' ? "bg-white/10 text-white shadow-sm" : "text-muted-foreground hover:text-white")}
             >
-              <Search size={16} />
-              Scan QR
+              Certificates
             </button>
           </div>
+
+          {activeTab !== 'CERTIFICATES' && (
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-muted-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 transition-all"
+                />
+              </div>
+              <ExportButton endpoint="/registrations/export" queryParams={{ search, eventId }} filename="event_registrations" />
+              <button
+                onClick={() => setIsScannerOpen(true)}
+                className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                Scan Pass
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="overflow-x-auto">
+        {activeTab === 'CERTIFICATES' ? (
+          <EventCertificatesManager eventId={eventId as string} />
+        ) : (
+          <div className="overflow-x-auto min-h-[400px]">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-muted-foreground uppercase bg-white/[0.02] border-b border-white/10">
               <tr>
@@ -292,6 +303,7 @@ export default function EventRegistrationsPage() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {isScannerOpen && (

@@ -283,7 +283,8 @@ model Registration {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   team  Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  attendanceMarkedBy User? @relation("AttendanceMarker", fields: [attendanceMarkedById], references: [id], onDelete: SetNull)
+  attendanceMarkedBy User? @relation("AttendanceMarker", fields: [attendanceMarkedById], references: [id])
+  certificates Certificate[]
 
   @@unique([userId, eventId])
   @@index([eventId])
@@ -463,41 +464,82 @@ model Contact {
 }
 
 model Certificate {
-  id            String   @id @default(cuid())
-  certificateId String   @unique
-  userId        String
-  eventId       String
-  templateId    String?
-  studentName   String
-  eventName     String
-  date          DateTime
-  position      String?
-  pdfUrl        String?
-  isDownloaded  Boolean  @default(false)
-  downloadCount Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(cuid())
+  certificateNumber String   @unique // e.g. ITSA-2026-COF-00123
+  verificationToken String   @unique
+  userId            String
+  registrationId    String?
+  eventId           String
+  templateId        String?
+  version           Int      @default(1)
+  status            CertificateStatus @default(GENERATED)
+  
+  generatedData     Json     // Immutable snapshot of placeholders
+  pdfUrl            String?
+  cloudinaryPublicId String?
+  
+  isDownloaded      Boolean  @default(false)
+  downloadCount     Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  user  User  @relation(fields: [userId], references: [id])
-  event Event @relation(fields: [eventId], references: [id])
+  user         User                 @relation(fields: [userId], references: [id])
+  event        Event                @relation(fields: [eventId], references: [id])
+  registration Registration?        @relation(fields: [registrationId], references: [id])
+  template     CertificateTemplate? @relation(fields: [templateId], references: [id])
 
-  @@index([certificateId])
+  @@index([certificateNumber])
+  @@index([verificationToken])
   @@index([userId])
   @@index([eventId])
   @@map("certificates")
 }
 
-model CertificateTemplate {
-  id           String   @id @default(cuid())
-  name         String
-  htmlTemplate String   @db.Text
-  cssStyles    String?  @db.Text
-  placeholders Json
-  thumbnailUrl String?
-  isDefault    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+enum CertificateStatus {
+  GENERATED
+  REVOKED
+}
 
+enum CertificateOrientation {
+  LANDSCAPE
+  PORTRAIT
+}
+
+enum CertificateType {
+  PARTICIPATION
+  WINNER
+  RUNNER_UP
+  VOLUNTEER
+  ORGANIZER
+  SPEAKER
+  JUDGE
+  WORKSHOP
+  CUSTOM
+}
+
+model CertificateTemplate {
+  id             String                 @id @default(cuid())
+  name           String
+  type           CertificateType        @default(PARTICIPATION)
+  orientation    CertificateOrientation @default(LANDSCAPE)
+  
+  fileUrl        String                 // Cloudinary raw URL for .pptx
+  cloudinaryId   String                 // Cloudinary public ID for deletion
+  previewImage   String?                // Generated image of slide 1
+  
+  detectedFields Json                   // List of placeholders found
+  version        Int                    @default(1)
+  isActive       Boolean                @default(true)
+  
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  deletedAt      DateTime?
+
+  certificates Certificate[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([deletedAt])
   @@map("certificate_templates")
 }
 
