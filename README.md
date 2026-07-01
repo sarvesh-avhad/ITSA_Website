@@ -27,8 +27,8 @@
 The platform uses a strict, hierarchical **Role-Based Access Control (RBAC)** system:
 - **`SUPER_ADMIN`**: Full system access. Can modify system settings, access database backups, manage security, and promote/demote other Admins and Super Admins.
 - **`ADMIN`**: Can create events, manage users, approve/reject registrations, and oversee the entire platform.
-- **`EVENT_COORDINATOR`**: Has isolated access. Can only view and manage registrations/data for the specific events they are assigned to.
 - **`ITSA_MEMBER`**: Marketing and content team. Can create gallery albums, upload media, draft announcements, and view basic event data.
+- **`Normal Users`**: ALl the normal users.
 
 ### Technical Highlights
 - **Monorepo Architecture:** Powered by Turborepo for seamless code sharing between the frontend and backend.
