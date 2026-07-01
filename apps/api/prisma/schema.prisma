@@ -196,6 +196,7 @@ model User {
   
   notifications Notification[]
   notificationReads NotificationRead[]
+  attendanceMarked Registration[] @relation("AttendanceMarker")
 
   @@index([email])
   @@index([prn])
@@ -273,6 +274,7 @@ model Registration {
   qrCode           String?            @unique
   attendanceMarked Boolean            @default(false)
   attendanceAt     DateTime?
+  attendanceMarkedById String?
   formData         Json?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
@@ -281,6 +283,7 @@ model Registration {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   team  Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  attendanceMarkedBy User? @relation("AttendanceMarker", fields: [attendanceMarkedById], references: [id], onDelete: SetNull)
 
   @@unique([userId, eventId])
   @@index([eventId])
