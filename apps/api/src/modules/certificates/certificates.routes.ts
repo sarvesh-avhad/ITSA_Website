@@ -63,6 +63,11 @@ router.get('/templates', authenticate, requireRole('ADMIN'), async (req, res, ne
   try {
     const templates = await prisma.certificateTemplate.findMany({
       where: { deletedAt: null },
+      include: {
+        _count: {
+          select: { certificates: true }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
     res.json({ success: true, data: templates });
@@ -123,6 +128,81 @@ router.delete('/templates/:id', authenticate, requireRole('ADMIN'), async (req, 
   } catch (err) { next(err); }
 });
 
+router.patch('/templates/:id/activate', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const template = await prisma.certificateTemplate.findUnique({ where: { id: req.params.id } });
+    if (!template) throw new NotFoundError('Template');
+    
+    // Deactivate all other templates of same type
+    await prisma.certificateTemplate.updateMany({
+      where: { type: template.type, id: { not: template.id } },
+      data: { isActive: false }
+    });
+
+    const activated = await prisma.certificateTemplate.update({
+      where: { id: template.id },
+      data: { isActive: true }
+    });
+
+    await createAuditLog(req, {
+      action: 'TEMPLATE_ACTIVATED',
+      severity: 'INFO',
+      resource: 'CertificateTemplate',
+      resourceId: template.id,
+    });
+
+    res.json({ success: true, data: activated });
+  } catch (err) { next(err); }
+});
+
+router.patch('/templates/:id/deactivate', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const deactivated = await prisma.certificateTemplate.update({
+      where: { id: req.params.id },
+      data: { isActive: false }
+    });
+
+    await createAuditLog(req, {
+      action: 'TEMPLATE_DEACTIVATED',
+      severity: 'INFO',
+      resource: 'CertificateTemplate',
+      resourceId: req.params.id,
+    });
+
+    res.json({ success: true, data: deactivated });
+  } catch (err) { next(err); }
+});
+
+router.post('/templates/:id/duplicate', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const original = await prisma.certificateTemplate.findUnique({ where: { id: req.params.id } });
+    if (!original) throw new NotFoundError('Template');
+
+    const duplicate = await prisma.certificateTemplate.create({
+      data: {
+        name: `${original.name} (Copy)`,
+        type: original.type,
+        orientation: original.orientation,
+        fileUrl: original.fileUrl,
+        cloudinaryId: original.cloudinaryId,
+        detectedFields: original.detectedFields,
+        isActive: false, // Duplicates start inactive
+        version: 1
+      }
+    });
+
+    await createAuditLog(req, {
+      action: 'TEMPLATE_UPDATED', // Treat as update or upload
+      severity: 'INFO',
+      resource: 'CertificateTemplate',
+      resourceId: duplicate.id,
+      newValue: { name: duplicate.name },
+    });
+
+    res.status(201).json({ success: true, data: duplicate });
+  } catch (err) { next(err); }
+});
+
 // ==========================================
 // GENERATION (Admin Only)
 // ==========================================
@@ -132,6 +212,23 @@ const generateSchema = z.object({
   templateId: z.string(),
   userIds: z.array(z.string()).min(1),
   duplicateAction: z.enum(['SKIP', 'REGENERATE', 'OVERWRITE']).default('SKIP'),
+});
+
+const previewSchema = z.object({
+  eventId: z.string(),
+  templateId: z.string(),
+  userIds: z.array(z.string()).min(1),
+});
+
+router.post('/preview', authenticate, requireRole('ADMIN'), validate(previewSchema), async (req, res, next) => {
+  try {
+    const { eventId, templateId, userIds } = req.body;
+    
+    // Always use the first eligible participant
+    const previewData = await CertificateService.generatePreview(eventId, templateId, userIds[0]);
+
+    res.json({ success: true, data: previewData });
+  } catch (err) { next(err); }
 });
 
 router.post('/generate', authenticate, requireRole('ADMIN'), validate(generateSchema), async (req, res, next) => {
@@ -237,6 +334,92 @@ router.get('/verify/:tokenOrNumber', async (req, res, next) => {
         },
       },
     });
+  } catch (err) { next(err); }
+});
+
+// ==========================================
+// ADMIN DASHBOARD & REPORTING
+// ==========================================
+
+router.get('/admin/all', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const { eventId, search, page = '1', limit = '10' } = req.query;
+    const pageNumber = parseInt(page as string);
+    const limitNumber = parseInt(limit as string);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const where: any = {};
+    if (eventId) where.eventId = eventId;
+    if (search) {
+      where.OR = [
+        { certificateNumber: { contains: search as string, mode: 'insensitive' } },
+        { user: { firstName: { contains: search as string, mode: 'insensitive' } } },
+        { user: { lastName: { contains: search as string, mode: 'insensitive' } } },
+        { user: { email: { contains: search as string, mode: 'insensitive' } } },
+        { user: { prn: { contains: search as string, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [certificates, total] = await Promise.all([
+      prisma.certificate.findMany({
+        where,
+        include: { user: true, event: true, template: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limitNumber
+      }),
+      prisma.certificate.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        certificates,
+        pagination: {
+          total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber)
+        }
+      }
+    });
+  } catch (err) { next(err); }
+});
+
+// ==========================================
+// EXPORT REPORT (Admin Only)
+// ==========================================
+
+router.get('/export/:eventId', authenticate, requireRole('ADMIN'), async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    
+    const certificates = await prisma.certificate.findMany({
+      where: { eventId },
+      include: {
+        user: true,
+        template: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const csvRows = ['Name,PRN,Email,Type,Status,Certificate Number,URL'];
+    
+    for (const cert of certificates) {
+      const name = `"${cert.user.firstName} ${cert.user.lastName}"`;
+      const prn = cert.user.prn || 'N/A';
+      const email = cert.user.email;
+      const type = cert.template.type;
+      const status = cert.status;
+      const certNum = cert.certificateNumber;
+      const url = cert.pdfUrl;
+      
+      csvRows.push(`${name},${prn},${email},${type},${status},${certNum},${url}`);
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="certificate-generation-report-${eventId}.csv"`);
+    res.send(csvRows.join('\n'));
   } catch (err) { next(err); }
 });
 

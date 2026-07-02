@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
-import { Award, Download, Loader2, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { Award, Download, Loader2, Calendar, FileText, CheckCircle2, Eye, ExternalLink, X } from 'lucide-react';
 import { SEO } from '@/components/seo';
 import { Link } from 'react-router-dom';
 
 export default function StudentCertificatesPage() {
+  const [previewPdf, setPreviewPdf] = useState<string | null>(null);
+
   const { data: certificates, isLoading } = useQuery({
     queryKey: ['my-certificates'],
     queryFn: async () => {
@@ -69,19 +72,27 @@ export default function StudentCertificatesPage() {
                 Issued {new Date(cert.createdAt).toLocaleDateString()}
               </div>
 
-              <div className="flex gap-3 relative z-10">
+              <div className="flex gap-2 relative z-10">
+                <button
+                  onClick={() => setPreviewPdf(cert.pdfUrl)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-lg font-bold transition-colors"
+                >
+                  <Eye size={16} />
+                  View
+                </button>
                 <a
                   href={cert.pdfUrl}
+                  download={`ITSA_Certificate_${cert.certificateNumber}.pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 btn-glow flex items-center justify-center gap-2 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-violet-500/20"
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10 flex items-center justify-center"
+                  title="Download PDF"
                 >
                   <Download size={16} />
-                  Download PDF
                 </a>
                 <Link
                   to={`/verify/certificate/${cert.certificateNumber}`}
-                  className="px-4 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-colors border border-border flex items-center justify-center group-hover:border-white/20"
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10 flex items-center justify-center"
                   title="Verify online"
                 >
                   <FileText size={16} />
@@ -89,6 +100,44 @@ export default function StudentCertificatesPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* PDF Preview Modal */}
+      {previewPdf && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setPreviewPdf(null)} />
+          <div className="relative w-full max-w-5xl h-[85vh] bg-[#0f111a] rounded-2xl border border-white/10 shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-black/20">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <FileText className="text-violet-400" size={20} />
+                Certificate Preview
+              </h3>
+              <div className="flex items-center gap-3">
+                <a 
+                  href={previewPdf} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors"
+                >
+                  <ExternalLink size={16} /> Open in new tab
+                </a>
+                <button 
+                  onClick={() => setPreviewPdf(null)}
+                  className="p-1 text-muted-foreground hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-black/40">
+              <iframe 
+                src={`${previewPdf}#toolbar=0`} 
+                className="w-full h-full border-0"
+                title="Certificate PDF"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

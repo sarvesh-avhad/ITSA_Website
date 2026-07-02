@@ -114,6 +114,15 @@ export class CertificateService {
     const detectedFields = JSON.parse(template.detectedFields as string);
     const issueDate = new Date();
     const eventYear = new Date(event.startDate).getFullYear();
+    const eventAbbr = event.title
+      .split(' ')
+      .map((w: string) => w[0])
+      .join('')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .substring(0, 4) || 'EVNT';
+
+    let certCount = await prisma.certificate.count({ where: { eventId: event.id } });
 
     for (const user of users) {
       try {
@@ -141,7 +150,11 @@ export class CertificateService {
 
         logger.info(`Generating certificate for user ${user.id}...`);
 
-        const certNumber = `ITSA-${eventYear}-CERT-${nanoid(6).toUpperCase()}`;
+        let certNumber = existing?.certificateNumber;
+        if (!certNumber || duplicateAction === 'REGENERATE') {
+           certCount++;
+           certNumber = `ITSA-${eventYear}-${eventAbbr}-${String(certCount).padStart(4, '0')}`;
+        }
         const verifyToken = nanoid(16);
         const verifyUrl = `${env.CORS_ORIGIN}/verify/certificate/${verifyToken}`;
 
@@ -208,13 +221,15 @@ export class CertificateService {
            });
         }
 
-        // Notify user
-        await NotificationService.send({
-          userId: user.id,
-          templateKey: NotificationTemplate.CERTIFICATE_READY,
-          sourceModule: NotificationSourceModule.CERTIFICATES,
-          metadata: { eventTitle: event.title, certificateId: newCert.certificateNumber, pdfUrl: newCert.pdfUrl }
-        });
+        // Notify user only for brand new certificates, not overwrites
+        if (!existing) {
+          await NotificationService.send({
+            userId: user.id,
+            templateKey: NotificationTemplate.CERTIFICATE_READY,
+            sourceModule: NotificationSourceModule.CERTIFICATES,
+            metadata: { eventTitle: event.title, certificateId: newCert.certificateNumber, pdfUrl: newCert.pdfUrl }
+          });
+        }
 
       } catch (err: any) {
         logger.error(`Error generating cert for user ${user.id}: ${err.message}`);
@@ -247,5 +262,64 @@ export class CertificateService {
       where: { id },
       data: { status: 'REVOKED' }
     });
+  }
+  static async generatePreview(eventId: string, templateId: string, userId: string) {
+    const template = await prisma.certificateTemplate.findUnique({ where: { id: templateId } });
+    if (!template) throw new NotFoundError('Template');
+
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new NotFoundError('Event');
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { registrations: { where: { eventId } } }
+    });
+    if (!user) throw new NotFoundError('User');
+
+    const response = await fetch(template.fileUrl);
+    const templateBuffer = Buffer.from(await response.arrayBuffer());
+    const detectedFields = JSON.parse(template.detectedFields as string);
+    const issueDate = new Date();
+    const eventYear = new Date(event.startDate).getFullYear();
+    const eventAbbr = event.title
+      .split(' ')
+      .map((w: string) => w[0])
+      .join('')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .substring(0, 4) || 'EVNT';
+
+    const registration = user.registrations[0] || null;
+    const certNumber = `ITSA-${eventYear}-${eventAbbr}-PREVIEW`;
+    const verifyToken = 'PREVIEW-TOKEN';
+    const verifyUrl = `${env.CORS_ORIGIN}/verify/certificate/${verifyToken}`;
+
+    const context: PlaceholderContext = {
+      user,
+      event,
+      registration,
+      certificateNumber: certNumber,
+      issueDate
+    };
+
+    const resolvedData = placeholderRegistry.resolveAll(detectedFields, context);
+    const pdfBuffer = await generateCertificatePdf(templateBuffer, resolvedData, verifyUrl);
+
+    // Upload as temporary to Cloudinary (will auto-delete if we use a temp folder or script, or just regular upload)
+    const uploadResult = await new Promise<any>((resolve, reject) => {
+       const stream = cloudinary.uploader.upload_stream(
+         { folder: 'itsa_certificates/previews', resource_type: 'image', format: 'pdf' },
+         (error, result) => {
+           if (error) reject(error);
+           else resolve(result);
+         }
+       );
+       stream.end(pdfBuffer);
+    });
+
+    return {
+      pdfUrl: uploadResult.secure_url,
+      resolvedData
+    };
   }
 }

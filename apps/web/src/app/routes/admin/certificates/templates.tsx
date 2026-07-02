@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { 
   FileText, Upload, Plus, Trash2, Eye, LayoutTemplate, 
-  Loader2, AlertTriangle, AlertCircle, FileSpreadsheet, Edit
+  Loader2, AlertTriangle, AlertCircle, FileSpreadsheet, Edit,
+  MoreVertical, Copy, Power, PowerOff, CheckCircle2, Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useDropzone } from 'react-dropzone';
@@ -19,6 +20,8 @@ export default function AdminCertificateTemplatesPage() {
   const queryClient = useQueryClient();
 
   const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [uploadResult, setUploadResult] = useState<any | null>(null);
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['certificateTemplates'],
@@ -48,12 +51,9 @@ export default function AdminCertificateTemplatesPage() {
         : await apiClient.post('/certificates/templates', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['certificateTemplates'] });
-      setIsUploading(false);
-      setIsEditing(null);
-      setFile(null);
-      setName('');
+      setUploadResult(data.data);
       toast.success(isEditing ? 'Template updated successfully' : 'Template uploaded successfully');
     },
     onError: (error: any) => {
@@ -68,6 +68,36 @@ export default function AdminCertificateTemplatesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['certificateTemplates'] });
       toast.success('Template deleted successfully');
+    },
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.patch(`/certificates/templates/${id}/activate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificateTemplates'] });
+      toast.success('Template activated successfully');
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.patch(`/certificates/templates/${id}/deactivate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificateTemplates'] });
+      toast.success('Template deactivated successfully');
+    },
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.post(`/certificates/templates/${id}/duplicate`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificateTemplates'] });
+      toast.success('Template duplicated successfully');
     },
   });
 
@@ -109,95 +139,153 @@ export default function AdminCertificateTemplatesPage() {
         <div className="glass-card rounded-2xl p-6 border border-white/10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
           
-          <h2 className="text-xl font-bold text-white mb-6 relative z-10">
-            {isEditing ? 'Edit Template' : 'Upload New PPTX Template'}
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-8 relative z-10">
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-white mb-1.5">Template Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Code-O-Fiesta Participation 2026"
-                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
-                />
+          {uploadResult ? (
+            <div className="relative z-10 text-center py-6">
+              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-emerald-500/30">
+                <CheckCircle2 className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Template Saved Successfully</h2>
+              <p className="text-muted-foreground mb-8">Ready to use for generating certificates.</p>
+              
+              <div className="max-w-md mx-auto text-left bg-black/40 rounded-xl p-6 border border-white/5">
+                <p className="text-sm font-semibold text-white mb-4 uppercase tracking-wider">Detected Placeholders</p>
+                <div className="space-y-3">
+                  {JSON.parse(uploadResult.detectedFields).length > 0 ? (
+                    JSON.parse(uploadResult.detectedFields).map((field: string) => {
+                      const isKnown = ['FullName', 'EventName', 'EventDate', 'CertificateNumber', 'QRCode', 'PRN', 'Position'].includes(field);
+                      return (
+                        <div key={field} className="flex items-start gap-3">
+                          {isKnown ? (
+                            <Check className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                          )}
+                          <div>
+                            <span className={`font-mono text-sm ${isKnown ? 'text-white' : 'text-amber-400'}`}>
+                              &lt;&lt;{field}&gt;&gt;
+                            </span>
+                            {!isKnown && (
+                              <p className="text-xs text-amber-500/80 mt-1">
+                                Unknown placeholder. Please verify spelling or rename it in your PPTX.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-amber-500 flex items-center gap-2 text-sm">
+                      <AlertTriangle className="h-4 w-4" /> No placeholders were detected in this PPTX.
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-white mb-1.5">Type</label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all [&>option]:bg-zinc-900"
-                  >
-                    <option value="PARTICIPATION">Participation</option>
-                    <option value="WINNER">Winner</option>
-                    <option value="RUNNER_UP">Runner-up</option>
-                    <option value="VOLUNTEER">Volunteer</option>
-                    <option value="ORGANIZER">Organizer</option>
-                    <option value="SPEAKER">Speaker</option>
-                    <option value="JUDGE">Judge</option>
-                    <option value="WORKSHOP">Workshop Completion</option>
-                    <option value="CUSTOM">Custom</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-white mb-1.5">Orientation</label>
-                  <select
-                    value={orientation}
-                    onChange={(e) => setOrientation(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all [&>option]:bg-zinc-900"
-                  >
-                    <option value="LANDSCAPE">Landscape</option>
-                    <option value="PORTRAIT">Portrait</option>
-                  </select>
-                </div>
+              <div className="mt-8">
+                <button 
+                  onClick={() => {
+                    setIsUploading(false);
+                    setUploadResult(null);
+                  }}
+                  className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Done
+                </button>
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-1.5">PPTX File {isEditing && "(Optional)"}</label>
-              <div 
-                {...getRootProps()} 
-                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                  isDragActive ? 'border-primary bg-primary/5' : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
-                }`}
-              >
-                <input {...getInputProps()} />
-                <FileSpreadsheet className="h-8 w-8 text-muted-foreground mb-3 mx-auto" />
-                {file ? (
-                  <p className="text-sm font-medium text-primary">{file.name}</p>
-                ) : (
+          ) : (
+            <div className="relative z-10">
+              <h2 className="text-xl font-bold text-white mb-6">
+                {isEditing ? 'Edit Template' : 'Upload New PPTX Template'}
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-8 relative z-10">
+                <div className="space-y-5">
                   <div>
-                    <p className="text-sm font-medium">Click or drag file to upload</p>
-                    <p className="text-xs text-muted-foreground mt-1">Supports .pptx only</p>
-                    {isEditing && <p className="text-xs text-amber-500 mt-2">Leave empty to keep existing file</p>}
+                    <label className="block text-sm font-medium text-white mb-1.5">Template Name</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Code-O-Fiesta Participation 2026"
+                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+                    />
                   </div>
-                )}
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-1.5">Type</label>
+                      <select
+                        value={type}
+                        onChange={(e) => setType(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all [&>option]:bg-zinc-900"
+                      >
+                        <option value="PARTICIPATION">Participation</option>
+                        <option value="WINNER">Winner</option>
+                        <option value="RUNNER_UP">Runner-up</option>
+                        <option value="VOLUNTEER">Volunteer</option>
+                        <option value="ORGANIZER">Organizer</option>
+                        <option value="SPEAKER">Speaker</option>
+                        <option value="JUDGE">Judge</option>
+                        <option value="WORKSHOP">Workshop Completion</option>
+                        <option value="CUSTOM">Custom</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-1.5">Orientation</label>
+                      <select
+                        value={orientation}
+                        onChange={(e) => setOrientation(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all [&>option]:bg-zinc-900"
+                      >
+                        <option value="LANDSCAPE">Landscape</option>
+                        <option value="PORTRAIT">Portrait</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-1.5">PPTX File {isEditing && "(Optional)"}</label>
+                  <div 
+                    {...getRootProps()} 
+                    className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+                      isDragActive ? 'border-primary bg-primary/5' : 'border-white/10 hover:border-white/20 hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    <input {...getInputProps()} />
+                    <FileSpreadsheet className="h-8 w-8 text-muted-foreground mb-3 mx-auto" />
+                    {file ? (
+                      <p className="text-sm font-medium text-primary">{file.name}</p>
+                    ) : (
+                      <div>
+                        <p className="text-sm font-medium">Click or drag file to upload</p>
+                        <p className="text-xs text-muted-foreground mt-1">Supports .pptx only</p>
+                        {isEditing && <p className="text-xs text-amber-500 mt-2">Leave empty to keep existing file</p>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t mt-6 pt-4">
+                <button 
+                  onClick={() => setIsUploading(false)}
+                  className="px-4 py-2 border rounded-lg font-medium hover:bg-muted/50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => uploadMutation.mutate()}
+                  disabled={isEditing ? (!name || uploadMutation.isPending) : (!file || !name || uploadMutation.isPending)}
+                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  Save Template
+                </button>
               </div>
             </div>
-          </div>
-
-          <div className="flex justify-end gap-3 border-t pt-4">
-            <button 
-              onClick={() => setIsUploading(false)}
-              className="px-4 py-2 border rounded-lg font-medium hover:bg-muted/50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={() => uploadMutation.mutate()}
-              disabled={!file || !name || uploadMutation.isPending}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-            >
-              {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Save Template
-            </button>
-          </div>
+          )}
         </div>
       )}
 
@@ -228,7 +316,16 @@ export default function AdminCertificateTemplatesPage() {
               <div className="h-32 bg-muted/30 border-b flex items-center justify-center relative p-4">
                 <FileSpreadsheet className="h-12 w-12 text-primary/40" />
                 <div className="absolute top-3 right-3 flex gap-2">
-                  <span className="bg-background/80 backdrop-blur-sm text-xs font-medium px-2 py-1 rounded shadow-sm border">
+                  {template.isActive ? (
+                    <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm border border-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> ACTIVE
+                    </span>
+                  ) : (
+                    <span className="bg-muted text-muted-foreground text-[10px] font-bold px-2 py-1 rounded shadow-sm border flex items-center gap-1">
+                      INACTIVE
+                    </span>
+                  )}
+                  <span className="bg-background/90 backdrop-blur-sm text-xs font-medium px-2 py-1 rounded shadow-sm border text-foreground">
                     v{template.version}
                   </span>
                 </div>
@@ -245,8 +342,9 @@ export default function AdminCertificateTemplatesPage() {
                   </span>
                 </div>
                 
-                <div className="text-xs text-muted-foreground mb-4">
-                  Uploaded {format(new Date(template.createdAt), 'MMM d, yyyy')}
+                <div className="text-xs text-muted-foreground mb-4 flex justify-between items-center">
+                  <span>Uploaded {format(new Date(template.createdAt), 'MMM d, yyyy')}</span>
+                  <span className="font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">{template._count?.certificates || 0} generated</span>
                 </div>
 
                 <div className="flex-1">
@@ -266,7 +364,7 @@ export default function AdminCertificateTemplatesPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 pt-4 border-t flex items-center justify-between">
+                <div className="mt-5 pt-4 border-t flex items-center justify-between relative">
                   <a 
                     href={template.fileUrl} 
                     target="_blank" 
@@ -276,25 +374,58 @@ export default function AdminCertificateTemplatesPage() {
                     <Eye className="h-4 w-4" />
                     Download PPTX
                   </a>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleEdit(template)}
-                      className="text-muted-foreground hover:text-blue-500 transition-colors p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                      title="Edit Template"
+                  
+                  <div className="relative">
+                    <button 
+                      onClick={() => setOpenDropdownId(openDropdownId === template.id ? null : template.id)}
+                      className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-muted"
                     >
-                      <Edit className="h-4 w-4" />
+                      <MoreVertical className="h-5 w-5" />
                     </button>
-                    <button
-                      onClick={() => {
-                        if(window.confirm('Are you sure you want to delete this template?')) {
-                          deleteMutation.mutate(template.id);
-                        }
-                      }}
-                      className="text-muted-foreground hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30"
-                      title="Delete Template"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    
+                    {openDropdownId === template.id && (
+                      <div className="absolute bottom-full right-0 mb-2 w-48 bg-card border shadow-lg rounded-xl overflow-hidden z-10 py-1">
+                        {!template.isActive && (
+                          <button 
+                            onClick={() => { activateMutation.mutate(template.id); setOpenDropdownId(null); }}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 text-emerald-500"
+                          >
+                            <Power className="h-4 w-4" /> Activate
+                          </button>
+                        )}
+                        {template.isActive && (
+                          <button 
+                            onClick={() => { deactivateMutation.mutate(template.id); setOpenDropdownId(null); }}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 text-amber-500"
+                          >
+                            <PowerOff className="h-4 w-4" /> Deactivate
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => { duplicateMutation.mutate(template.id); setOpenDropdownId(null); }}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 text-primary"
+                        >
+                          <Copy className="h-4 w-4" /> Duplicate
+                        </button>
+                        <button 
+                          onClick={() => { handleEdit(template); setOpenDropdownId(null); }}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 text-blue-500"
+                        >
+                          <Edit className="h-4 w-4" /> Edit
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if(window.confirm('Are you sure you want to delete this template?')) {
+                              deleteMutation.mutate(template.id);
+                              setOpenDropdownId(null);
+                            }
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-muted flex items-center gap-2 text-red-500"
+                        >
+                          <Trash2 className="h-4 w-4" /> Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
