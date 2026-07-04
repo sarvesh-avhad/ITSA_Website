@@ -79,14 +79,19 @@ router.patch('/templates/:id', authenticate, requireRole('ADMIN'), uploadMem.sin
     let dataToUpdate: any = { name, type, orientation };
     
     // If a new file is uploaded, upload to cloudinary and extract fields
+    let fileBuffer: Buffer | undefined;
     if (req.file && req.file.buffer) {
-      const detectedFields = extractPlaceholders(req.file.buffer);
+      fileBuffer = req.file.buffer;
+    }
+
+    if (fileBuffer) {
+      const detectedFields = extractPlaceholders(fileBuffer);
       const uploadResult = await new Promise<any>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: 'itsa_certificates/templates', resource_type: 'raw', format: 'pptx' },
           (error, result) => { if (error) reject(error); else resolve(result); }
         );
-        stream.end(req.file.buffer);
+        stream.end(fileBuffer);
       });
       dataToUpdate.fileUrl = uploadResult.secure_url;
       dataToUpdate.cloudinaryId = uploadResult.public_id;
@@ -95,7 +100,7 @@ router.patch('/templates/:id', authenticate, requireRole('ADMIN'), uploadMem.sin
     }
 
     const template = await prisma.certificateTemplate.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: dataToUpdate
     });
 
@@ -130,7 +135,7 @@ router.delete('/templates/:id', authenticate, requireRole('ADMIN'), async (req, 
 
 router.patch('/templates/:id/activate', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    const template = await prisma.certificateTemplate.findUnique({ where: { id: req.params.id } });
+    const template = await prisma.certificateTemplate.findUnique({ where: { id: req.params.id as string } });
     if (!template) throw new NotFoundError('Template');
     
     // Deactivate all other templates of same type
@@ -158,7 +163,7 @@ router.patch('/templates/:id/activate', authenticate, requireRole('ADMIN'), asyn
 router.patch('/templates/:id/deactivate', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
     const deactivated = await prisma.certificateTemplate.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { isActive: false }
     });
 
@@ -166,7 +171,7 @@ router.patch('/templates/:id/deactivate', authenticate, requireRole('ADMIN'), as
       action: 'TEMPLATE_DEACTIVATED',
       severity: 'INFO',
       resource: 'CertificateTemplate',
-      resourceId: req.params.id,
+      resourceId: req.params.id as string,
     });
 
     res.json({ success: true, data: deactivated });
@@ -175,7 +180,7 @@ router.patch('/templates/:id/deactivate', authenticate, requireRole('ADMIN'), as
 
 router.post('/templates/:id/duplicate', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    const original = await prisma.certificateTemplate.findUnique({ where: { id: req.params.id } });
+    const original = await prisma.certificateTemplate.findUnique({ where: { id: req.params.id as string } });
     if (!original) throw new NotFoundError('Template');
 
     const duplicate = await prisma.certificateTemplate.create({
@@ -185,7 +190,7 @@ router.post('/templates/:id/duplicate', authenticate, requireRole('ADMIN'), asyn
         orientation: original.orientation,
         fileUrl: original.fileUrl,
         cloudinaryId: original.cloudinaryId,
-        detectedFields: original.detectedFields,
+        detectedFields: original.detectedFields ? JSON.parse(JSON.stringify(original.detectedFields)) : undefined,
         isActive: false, // Duplicates start inactive
         version: 1
       }
@@ -392,7 +397,7 @@ router.get('/admin/all', authenticate, requireRole('ADMIN'), async (req, res, ne
 
 router.get('/export/:eventId', authenticate, requireRole('ADMIN'), async (req, res, next) => {
   try {
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     
     const certificates = await prisma.certificate.findMany({
       where: { eventId },
@@ -409,7 +414,7 @@ router.get('/export/:eventId', authenticate, requireRole('ADMIN'), async (req, r
       const name = `"${cert.user.firstName} ${cert.user.lastName}"`;
       const prn = cert.user.prn || 'N/A';
       const email = cert.user.email;
-      const type = cert.template.type;
+      const type = cert.template?.type || 'N/A';
       const status = cert.status;
       const certNum = cert.certificateNumber;
       const url = cert.pdfUrl;
