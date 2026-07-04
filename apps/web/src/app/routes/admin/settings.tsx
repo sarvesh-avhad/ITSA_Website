@@ -46,13 +46,17 @@ export default function AdminSettingsPage() {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
+  const sectionKeys: Record<string, string[]> = {
+    homepage: ['hero_title', 'hero_subtitle', 'hero_video_url', 'about_snippet', 'stats_members', 'stats_events', 'stats_years', 'stats_alumni'],
+    about: ['vision', 'mission', 'objectives']
+  };
+
   const handleSave = (section: string) => {
-    // Only save keys belonging to this section
-    const relevantConfigs = configs.filter((c: any) => c.section === section);
-    const updates = relevantConfigs.map((c: any) => ({
-      key: c.key,
-      value: formData[c.key],
-      section: c.section
+    const keys = sectionKeys[section] || [];
+    const updates = keys.map(key => ({
+      key,
+      value: formData[key] !== undefined ? formData[key] : '',
+      section
     }));
     updateMutation.mutate(updates);
   };
@@ -195,6 +199,14 @@ export default function AdminSettingsPage() {
               <textarea
                 value={formData['mission'] || ''}
                 onChange={(e) => handleChange('mission', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none min-h-[100px]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Objectives</label>
+              <textarea
+                value={formData['objectives'] || ''}
+                onChange={(e) => handleChange('objectives', e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none min-h-[100px]"
               />
             </div>

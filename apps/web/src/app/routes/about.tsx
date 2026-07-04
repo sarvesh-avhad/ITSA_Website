@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '@/components/seo';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
+import { AboutPreview } from '@/components/home/about-preview';
 
 const timeline = [
   { year: '2022', title: 'ITSA Inception', desc: 'The Information Technology Students Association was founded to bridge the gap between curriculum and industry.' },
@@ -113,84 +114,16 @@ export default function AboutPage() {
       <div className="fixed inset-0 z-0 bg-grid opacity-20 pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6">
-        {/* Hero Section */}
-        <div className="text-center mb-24 mt-8 relative">
+        <div className="mb-8 relative">
           <button 
             onClick={() => navigate(-1)}
-            className="absolute left-0 top-0 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+            className="absolute left-0 top-12 p-2 rounded-full hover:bg-white/10 text-muted-foreground hover:text-white transition-colors z-50"
           >
             <ArrowLeft size={24} />
           </button>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <span className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest text-violet-400 bg-violet-500/10 border border-violet-500/20 mb-6">
-              Department of IT
-            </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black text-white mb-6 leading-[1.1]">
-              About ITSA
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-balance">
-              The Information Technology Students Association (ITSA) is the premier student body 
-              dedicated to fostering innovation, technical excellence, and professional growth.
-            </p>
-          </motion.div>
         </div>
-
-        {/* Vision, Mission & Objectives */}
-        <div className="grid md:grid-cols-3 gap-8 mb-24">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="glass-card rounded-3xl p-10 relative overflow-hidden group border-cyan-500/20"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-6 relative z-10">
-              <Eye size={28} className="text-cyan-400" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-4 relative z-10">Our Vision</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed relative z-10">
-              To be recognized globally as a center of excellence in Information Technology, 
-              producing technically proficient, ethically strong, and socially responsible professionals.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="glass-card rounded-3xl p-10 relative overflow-hidden group border-violet-500/20"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-violet-600/20 flex items-center justify-center mb-6 relative z-10">
-              <Target size={28} className="text-violet-400" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-4 relative z-10">Our Mission</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed relative z-10">
-              To bridge the gap between academia and industry by organizing hands-on workshops, 
-              competitive hackathons, and seminars. We strive to build a community of innovators.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="glass-card rounded-3xl p-10 relative overflow-hidden group border-emerald-500/20"
-          >
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 flex items-center justify-center mb-6 relative z-10">
-              <Award size={28} className="text-emerald-400" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-4 relative z-10">Objectives</h2>
-            <p className="text-lg text-muted-foreground leading-relaxed relative z-10">
-              To provide a platform for skill development, networking, and collaborative learning to prepare students for the ever-evolving IT landscape.
-            </p>
-          </motion.div>
-        </div>
-
+        <AboutPreview />
+        
         {/* Timeline */}
         <div className="mb-32">
           <div className="text-center mb-16">

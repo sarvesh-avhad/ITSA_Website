@@ -1,25 +1,35 @@
 import { motion } from 'framer-motion';
-import { Target, Lightbulb, Zap } from 'lucide-react';
-
-const objectives = [
-  {
-    icon: <Target className="w-6 h-6 text-violet-400" />,
-    title: 'Mission',
-    description: 'To foster a culture of technical excellence and innovation among students by organizing workshops, hackathons, and industry interactions.'
-  },
-  {
-    icon: <Lightbulb className="w-6 h-6 text-cyan-400" />,
-    title: 'Vision',
-    description: 'To become a premier student organization that bridges the gap between academic learning and industry requirements.'
-  },
-  {
-    icon: <Zap className="w-6 h-6 text-emerald-400" />,
-    title: 'Objectives',
-    description: 'Provide a platform for skill development, networking, and collaborative learning to prepare students for the ever-evolving IT landscape.'
-  }
-];
+import { Target, Lightbulb, Zap, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/lib/api-client';
 
 export function AboutPreview() {
+  const { data: cmsData, isLoading } = useQuery({
+    queryKey: ['public-cms'],
+    queryFn: async () => {
+      const res = await apiClient.get('/cms/public');
+      return res.data.data;
+    }
+  });
+
+  const objectives = [
+    {
+      icon: <Target className="w-6 h-6 text-violet-400" />,
+      title: 'Mission',
+      description: cmsData?.mission || 'To foster a culture of technical excellence and innovation among students by organizing workshops, hackathons, and industry interactions.'
+    },
+    {
+      icon: <Lightbulb className="w-6 h-6 text-cyan-400" />,
+      title: 'Vision',
+      description: cmsData?.vision || 'To become a premier student organization that bridges the gap between academic learning and industry requirements.'
+    },
+    {
+      icon: <Zap className="w-6 h-6 text-emerald-400" />,
+      title: 'Objectives',
+      description: cmsData?.objectives || 'Provide a platform for skill development, networking, and collaborative learning to prepare students for the ever-evolving IT landscape.'
+    }
+  ];
+
   return (
     <section className="relative py-32 px-6">
       <div className="max-w-7xl mx-auto">

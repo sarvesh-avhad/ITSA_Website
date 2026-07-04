@@ -21,8 +21,8 @@ export function HeroSection() {
           <Link to="/events" className="liquid-glass rounded-full px-10 py-4 text-base text-foreground hover:scale-[1.03] transition-transform cursor-pointer inline-flex items-center justify-center">
             Explore Events
           </Link>
-          <Link to="/join-itsa" className="glass-card bg-white/5 border-white/10 rounded-full px-10 py-4 text-base text-foreground hover:bg-white/10 hover:scale-[1.03] transition-all cursor-pointer inline-flex items-center justify-center">
-            Join ITSA
+          <Link to="/gallery" className="glass-card bg-white/5 border-white/10 rounded-full px-10 py-4 text-base text-foreground hover:bg-white/10 hover:scale-[1.03] transition-all cursor-pointer inline-flex items-center justify-center">
+            View Gallery
           </Link>
         </div>
       </div>

@@ -1,11 +1,21 @@
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { Target, Eye, Lightbulb, ArrowRight } from 'lucide-react';
+import { Target, Eye, Lightbulb, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/lib/api-client';
 
 export function AboutSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
+
+  const { data: cmsData, isLoading } = useQuery({
+    queryKey: ['public-cms'],
+    queryFn: async () => {
+      const res = await apiClient.get('/cms/public');
+      return res.data.data;
+    }
+  });
 
   return (
     <section ref={ref} className="section-padding relative overflow-hidden">
@@ -35,28 +45,29 @@ export function AboutSection() {
 
         {/* Cards Grid */}
         <div className="grid md:grid-cols-3 gap-6">
-          {[
+          {isLoading ? (
+             <div className="md:col-span-3 flex justify-center py-12">
+               <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+             </div>
+          ) : [
             {
               icon: Eye,
               title: 'Our Vision',
-              description:
-                'To be the premier platform for IT students to innovate, learn, and grow into industry-ready professionals who lead technological transformation.',
+              description: cmsData?.vision || 'To be the premier platform for IT students to innovate, learn, and grow into industry-ready professionals who lead technological transformation.',
               color: 'from-violet-500 to-purple-600',
               delay: 0.1,
             },
             {
               icon: Target,
               title: 'Our Mission',
-              description:
-                'To organize impactful technical events, provide hands-on learning opportunities, bridge the industry-academia gap, and build a vibrant community of tech enthusiasts.',
+              description: cmsData?.mission || 'To organize impactful technical events, provide hands-on learning opportunities, bridge the industry-academia gap, and build a vibrant community of tech enthusiasts.',
               color: 'from-cyan-500 to-blue-600',
               delay: 0.2,
             },
             {
               icon: Lightbulb,
-              title: 'What We Do',
-              description:
-                'From competitive coding championships and 24-hour hackathons to industry workshops and networking events — we create experiences that shape careers.',
+              title: 'Objectives',
+              description: cmsData?.objectives || 'Provide a platform for skill development, networking, and collaborative learning to prepare students for the ever-evolving IT landscape.',
               color: 'from-amber-500 to-orange-600',
               delay: 0.3,
             },
