@@ -30,13 +30,25 @@ router.get('/albums', validateQuery(paginationSchema), async (req, res, next) =>
         skip,
         take: Number(limit),
         orderBy: [{ year: 'desc' }, { sortOrder: 'asc' }],
-        include: { _count: { select: { media: true } }, event: { select: { id: true, title: true } } },
+        include: { 
+          _count: { select: { media: true } }, 
+          event: { select: { id: true, title: true } },
+          media: { take: 1, orderBy: { createdAt: 'asc' }, select: { url: true } } 
+        },
       }),
       prisma.galleryAlbum.count({ where }),
     ]);
 
     const result = {
-      data: albums.map((a: any) => ({ ...a, mediaCount: a._count.media })),
+      data: albums.map((a: any) => {
+        const fallbackCover = a.media && a.media.length > 0 ? a.media[0].url : null;
+        return { 
+          ...a, 
+          mediaCount: a._count.media,
+          coverImageUrl: a.coverImageUrl || a.coverUrl || fallbackCover,
+          media: undefined // hide from public payload if desired, or leave it
+        };
+      }),
       meta: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) },
     };
 
@@ -60,13 +72,25 @@ router.get('/admin/albums', authenticate, requireRole('ITSA_MEMBER'), validateQu
         skip,
         take: Number(limit),
         orderBy: [{ year: 'desc' }, { sortOrder: 'asc' }],
-        include: { _count: { select: { media: true } }, event: { select: { id: true, title: true } } },
+        include: { 
+          _count: { select: { media: true } }, 
+          event: { select: { id: true, title: true } },
+          media: { take: 1, orderBy: { createdAt: 'asc' }, select: { url: true } } 
+        },
       }),
       prisma.galleryAlbum.count({ where }),
     ]);
 
     const result = {
-      data: albums.map((a: any) => ({ ...a, mediaCount: a._count.media })),
+      data: albums.map((a: any) => {
+        const fallbackCover = a.media && a.media.length > 0 ? a.media[0].url : null;
+        return { 
+          ...a, 
+          mediaCount: a._count.media,
+          coverImageUrl: a.coverImageUrl || a.coverUrl || fallbackCover,
+          media: undefined
+        };
+      }),
       meta: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) },
     };
 

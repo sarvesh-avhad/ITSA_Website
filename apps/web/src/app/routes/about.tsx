@@ -166,18 +166,7 @@ export default function AboutPage() {
           </>
         )}
 
-        {/* CTA */}
-        <div className="text-center py-12">
-          <h2 className="text-3xl font-bold text-white mb-6">Want to be a part of ITSA?</h2>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/auth/register" className="btn-glow px-8 py-4 bg-violet-600 text-white rounded-xl font-bold hover:bg-violet-500 transition-colors">
-              Join as a Member
-            </Link>
-            <Link to="/contact" className="px-8 py-4 glass border border-white/10 text-white rounded-xl font-bold hover:bg-white/10 transition-colors">
-              Contact Us
-            </Link>
-          </div>
-        </div>
+
       </div>
     </div>
   );

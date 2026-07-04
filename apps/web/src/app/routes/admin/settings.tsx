@@ -48,7 +48,8 @@ export default function AdminSettingsPage() {
 
   const sectionKeys: Record<string, string[]> = {
     homepage: ['hero_title', 'hero_subtitle', 'hero_video_url', 'about_snippet', 'stats_members', 'stats_events', 'stats_years', 'stats_alumni'],
-    about: ['vision', 'mission', 'objectives']
+    about: ['vision', 'mission', 'objectives'],
+    contact: ['contact_email', 'contact_phone', 'contact_location', 'social_instagram', 'social_linkedin', 'social_twitter', 'social_github']
   };
 
   const handleSave = (section: string) => {

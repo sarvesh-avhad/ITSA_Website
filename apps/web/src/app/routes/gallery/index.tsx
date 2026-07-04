@@ -59,7 +59,7 @@ export default function GalleryPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['gallery-albums'],
     queryFn: async () => {
-      const res = await apiClient.get('/gallery/albums?limit=20');
+      const res = await apiClient.get(`/gallery/albums?limit=20&_t=${Date.now()}`);
       return res.data;
     },
   });
