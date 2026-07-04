@@ -17,6 +17,12 @@ The ITSA platform is a comprehensive hub for students and administrators, boasti
 - **🧑‍💼 Committee Management**: Displays the current ITSA core committee and faculty advisors with beautiful profile cards.
 - **🛡️ Audit Logging**: Complete traceability of all system actions for administrators.
 
+- **Event Attendance Scanner**:
+  Develop a mobile-friendly QR code scanner page within the admin dashboard to quickly scan student tickets at the door and mark them as "Attended".
+
+- **Dynamic Bulk Certification Creation**: 
+  Currently, certificates are somewhat rigid. We need a dynamic builder where administrators can upload custom templates and map variables (like Name, Event, Date) to X/Y coordinates for bulk PDF generation.
+
 ---
 
 ## 📁 Project Structure
@@ -101,8 +107,6 @@ npm run dev
 
 Looking for a place to start? We have several exciting features on our roadmap that need implementation. Feel free to pick one up!
 
-- **Dynamic Bulk Certification Creation**: 
-  Currently, certificates are somewhat rigid. We need a dynamic builder where administrators can upload custom templates and map variables (like Name, Event, Date) to X/Y coordinates for bulk PDF generation.
   
 - **Payment Gateway Integration**:
   Integrate a secure payment gateway (like Razorpay or Stripe) to handle paid event registrations directly on the platform instead of relying on external manual verification.
@@ -110,8 +114,7 @@ Looking for a place to start? We have several exciting features on our roadmap t
 - **Admin Broadcast Dashboard**:
   Build the UI in the Admin panel that hooks into our `BROADCAST_MESSAGE` notification template, allowing admins to send custom alerts to specific roles (e.g., all Students or all ITSA Members).
 
-- **Event Attendance Scanner**:
-  Develop a mobile-friendly QR code scanner page within the admin dashboard to quickly scan student tickets at the door and mark them as "Attended".
+
 
 ---
 
