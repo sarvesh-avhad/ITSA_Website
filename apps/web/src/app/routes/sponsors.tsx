@@ -91,7 +91,7 @@ export default function SponsorsPage() {
                           <img
                             src={sponsor.logoUrl}
                             alt={sponsor.name}
-                            className="max-w-full max-h-full object-contain filter grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+                            className="max-w-full max-h-full object-contain transition-all duration-500"
                             loading="lazy"
                           />
                         </div>
