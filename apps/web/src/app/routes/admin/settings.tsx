@@ -49,7 +49,7 @@ export default function AdminSettingsPage() {
   const sectionKeys: Record<string, string[]> = {
     homepage: ['hero_title', 'hero_subtitle', 'hero_video_url', 'about_snippet', 'stats_members', 'stats_events', 'stats_years', 'stats_alumni'],
     about: ['vision', 'mission', 'objectives'],
-    contact: ['contact_email', 'contact_phone', 'contact_location', 'social_instagram', 'social_linkedin', 'social_twitter', 'social_github']
+    contact: ['contact_email', 'contact_phone', 'contact_location', 'social_instagram', 'social_linkedin', 'social_facebook', 'social_whatsapp']
   };
 
   const handleSave = (section: string) => {
@@ -213,6 +213,94 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* Contact Information Section */}
+        <div className="glass-card rounded-2xl border border-white/5 p-6 space-y-6 lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <h2 className="text-xl font-bold text-white">Contact Information</h2>
+            <button
+              onClick={() => handleSave('contact')}
+              disabled={updateMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl transition-colors font-medium text-sm disabled:opacity-50"
+            >
+              <Save size={16} />
+              Save Changes
+            </button>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Contact Email</label>
+              <input
+                type="email"
+                value={formData['contact_email'] || ''}
+                onChange={(e) => handleChange('contact_email', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-1.5">Contact Phone</label>
+              <input
+                type="text"
+                value={formData['contact_phone'] || ''}
+                onChange={(e) => handleChange('contact_phone', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-white mb-1.5">Location Address (use &lt;br /&gt; for new lines)</label>
+              <textarea
+                value={formData['contact_location'] || ''}
+                onChange={(e) => handleChange('contact_location', e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none min-h-[80px]"
+              />
+            </div>
+            
+            {/* Social Media */}
+            <div className="md:col-span-2 pt-4 border-t border-white/10">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-4">Social Media Links</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-white mb-1.5">Instagram URL</label>
+                  <input
+                    type="url"
+                    value={formData['social_instagram'] || ''}
+                    onChange={(e) => handleChange('social_instagram', e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white mb-1.5">LinkedIn URL</label>
+                  <input
+                    type="url"
+                    value={formData['social_linkedin'] || ''}
+                    onChange={(e) => handleChange('social_linkedin', e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white mb-1.5">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={formData['social_facebook'] || ''}
+                    onChange={(e) => handleChange('social_facebook', e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-white mb-1.5">WhatsApp Channel URL</label>
+                  <input
+                    type="url"
+                    value={formData['social_whatsapp'] || ''}
+                    onChange={(e) => handleChange('social_whatsapp', e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

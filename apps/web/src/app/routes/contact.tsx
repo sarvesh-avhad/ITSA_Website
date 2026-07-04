@@ -5,8 +5,10 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import apiClient from '@/lib/api-client';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Send, CheckCircle2, Loader2, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2, Loader2, MessageSquare, ArrowLeft, Instagram, Linkedin, Facebook, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { SEO } from '@/components/seo';
 
 const contactSchema = z.object({
   name: z.string().min(2, 'Name is too short'),
@@ -17,12 +19,18 @@ const contactSchema = z.object({
 
 type ContactForm = z.infer<typeof contactSchema>;
 
-import { SEO } from '@/components/seo';
-
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
+
+  const { data: cms } = useQuery({
+    queryKey: ['public-cms'],
+    queryFn: async () => {
+      const res = await apiClient.get('/cms/public');
+      return res.data.data;
+    }
+  });
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
@@ -40,6 +48,50 @@ export default function ContactPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const renderSocialIcon = (url: string | undefined, Icon: any, color: string, name: string) => {
+    if (!url) return null;
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={name}
+        className="group/li"
+        style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.08)',
+          transition: 'transform 0.2s ease',
+          textDecoration: 'none',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = 'scale(1.12)';
+          const svg = e.currentTarget.querySelector('svg');
+          if (svg) svg.style.opacity = '1';
+          const paths = e.currentTarget.querySelectorAll('svg path, svg rect, svg circle');
+          paths.forEach((el) => (el as SVGElement).setAttribute('stroke', color));
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.transform = 'scale(1)';
+          const svg = e.currentTarget.querySelector('svg');
+          if (svg) svg.style.opacity = '0.6';
+          const paths = e.currentTarget.querySelectorAll('svg path, svg rect, svg circle');
+          paths.forEach((el) => (el as SVGElement).setAttribute('stroke', 'white'));
+        }}
+      >
+        <Icon size={18} color="white" style={{ opacity: 0.6, transition: 'opacity 0.2s' }} />
+      </a>
+    );
   };
 
   return (
@@ -89,7 +141,9 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-white font-medium mb-1">Email</h3>
-                    <a href="mailto:itsa@college.edu" className="text-muted-foreground hover:text-violet-400 transition-colors">itsa@college.edu</a>
+                    <a href={`mailto:${cms?.contact_email || 'itsa@college.edu'}`} className="text-muted-foreground hover:text-violet-400 transition-colors">
+                      {cms?.contact_email || 'itsa@college.edu'}
+                    </a>
                     <p className="text-xs text-muted-foreground mt-1">Our team typically responds within 24 hours.</p>
                   </div>
                 </div>
@@ -100,7 +154,9 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-white font-medium mb-1">Phone</h3>
-                    <a href="tel:+919876543210" className="text-muted-foreground hover:text-cyan-400 transition-colors">+91 98765 43210</a>
+                    <a href={`tel:${cms?.contact_phone?.replace(/\s/g, '') || '+919876543210'}`} className="text-muted-foreground hover:text-cyan-400 transition-colors">
+                      {cms?.contact_phone || '+91 98765 43210'}
+                    </a>
                     <p className="text-xs text-muted-foreground mt-1">Mon-Fri from 9am to 5pm.</p>
                   </div>
                 </div>
@@ -111,7 +167,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-white font-medium mb-1">Location</h3>
-                    <p className="text-muted-foreground">Information Technology Department<br />Engineering College Campus<br />Maharashtra, India</p>
+                    <p className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: cms?.contact_location || 'Information Technology Department<br />Engineering College Campus<br />Maharashtra, India' }} />
                   </div>
                 </div>
               </div>
@@ -120,11 +176,14 @@ export default function ContactPage() {
               <div className="pt-8 border-t border-white/10">
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Follow Us</h3>
                 <div className="flex gap-4">
-                  {['Instagram', 'LinkedIn', 'Twitter', 'GitHub'].map((social) => (
-                    <a key={social} href="#" className="w-10 h-10 rounded-full bg-white/5 hover:bg-violet-600 hover:text-white flex items-center justify-center transition-all text-muted-foreground">
-                      <span className="text-xs font-bold">{social.charAt(0)}</span>
-                    </a>
-                  ))}
+                  {renderSocialIcon(cms?.social_instagram, Instagram, '#E1306C', 'Instagram')}
+                  {renderSocialIcon(cms?.social_linkedin, Linkedin, '#0A66C2', 'LinkedIn')}
+                  {renderSocialIcon(cms?.social_facebook, Facebook, '#1877F2', 'Facebook')}
+                  {renderSocialIcon(cms?.social_whatsapp, MessageCircle, '#25D366', 'WhatsApp')}
+                  
+                  {!cms?.social_instagram && !cms?.social_linkedin && !cms?.social_facebook && !cms?.social_whatsapp && (
+                    <span className="text-muted-foreground text-sm italic">Add social links in Admin Settings</span>
+                  )}
                 </div>
               </div>
             </div>
