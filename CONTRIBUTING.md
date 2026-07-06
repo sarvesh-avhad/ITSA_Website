@@ -1,135 +1,130 @@
-# Contributing to ITSA Website
-
-Welcome! We're excited that you're interested in contributing to the ITSA (Information Technology Students' Association) Website. This guide will help you get started with our tech stack, understand the project structure, and run the platform locally on your machine.
-
----
-
-## 🌟 Project Features
-
-The ITSA platform is a comprehensive hub for students and administrators, boasting the following features:
-
-- **🔐 Robust Authentication**: Secure JWT-based authentication with role-based access control (Student, ITSA Member, Admin, Super Admin).
-- **🎟️ Event Management & Registration**: Admins can create and manage events. Students can browse, register (Individually or as a Team), and track their registration statuses.
-- **🏅 Automated Certificates**: Admins can issue certificates in bulk, and students can download/verify their authenticity instantly.
-- **📸 Dynamic Gallery**: A visually stunning photo gallery to showcase past events and memories.
-- **📢 Real-time Announcements**: A dedicated space for important news, updates, and broadcasts.
-- **🔔 Smart Notification System**: A streamlined notification center that alerts users to important events like registration approvals, role changes, and certificate generation, without alert fatigue.
-- **🧑‍💼 Committee Management**: Displays the current ITSA core committee and faculty advisors with beautiful profile cards.
-- **🛡️ Audit Logging**: Complete traceability of all system actions for administrators.
-
-- **Event Attendance Scanner**:
-  Develop a mobile-friendly QR code scanner page within the admin dashboard to quickly scan student tickets at the door and mark them as "Attended".
-
-- **Dynamic Bulk Certification Creation**: 
-  Currently, certificates are somewhat rigid. We need a dynamic builder where administrators can upload custom templates and map variables (like Name, Event, Date) to X/Y coordinates for bulk PDF generation.
+<div align="center">
+  <h1>🤝 Contributing to the ITSA Platform</h1>
+  <p>First off, thank you for considering contributing to the Information Technology Students' Association (ITSA) platform! It's people like you that make ITSA such a great community.</p>
+</div>
 
 ---
 
-## 📁 Project Structure
+## 🌟 Why Contribute?
 
-This project is built using a **Monorepo** architecture using Turborepo.
-
-```text
-📦 ITSA Website
- ┣ 📂 apps/
- ┃ ┣ 📂 api/       # Express + Prisma Backend
- ┃ ┗ 📂 web/       # React + Vite Frontend (Tailwind CSS)
- ┣ 📂 packages/
- ┃ ┣ 📂 shared/    # Shared TypeScript types, schemas, and utilities
- ┃ ┣ 📂 eslint-config/
- ┃ ┗ 📂 typescript-config/
- ┣ 📜 package.json
- ┗ 📜 turbo.json
-```
+By contributing to this repository, you'll get hands-on experience with a modern, production-ready tech stack (React, TypeScript, Turborepo, Express, PostgreSQL, Prisma) while building features that will be used by hundreds of students and faculty members.
 
 ---
 
-## 🚀 Getting Started (Local Development)
+## 🚀 Quick Start (Local Development)
 
-Follow these steps to get the project running on your local machine:
+We've made setting up the environment as frictionless as possible.
 
 ### 1. Prerequisites
-Make sure you have the following installed:
-- **Node.js** (v18 or higher recommended)
-- **npm** (comes with Node.js)
-- **PostgreSQL** (Running locally or via Docker)
+Ensure you have the following installed on your machine:
+- **Node.js** (v20+ recommended)
+- **PostgreSQL** (Running locally, or a cloud instance like Neon/Supabase)
+- **Redis** (Required for caching and rate-limiting)
 
-### 2. Clone the Repository
+### 2. Fork & Clone
 ```bash
-git clone <your-repository-url>
-cd "ITSA Website"
+# 1. Fork the repo on GitHub, then clone your fork
+git clone https://github.com/<your-username>/ITSA_Website.git
+cd ITSA_Website
+
+# 2. Add the upstream repository (optional but recommended)
+git remote add upstream https://github.com/your-org/ITSA_Website.git
 ```
 
 ### 3. Install Dependencies
-Install all dependencies across the monorepo from the root directory:
+Because we use **Turborepo**, installing dependencies from the root will set up all apps and packages automatically.
 ```bash
 npm install
 ```
 
 ### 4. Setup Environment Variables
-You will need `.env` files for both the API and the Web app. 
+You need configuration files for both the API and Web apps.
 
-**For the Backend (`apps/api/.env`):**
-Create a `.env` file inside `apps/api` and configure your database and secrets:
+**Backend (`apps/api/.env`):**
 ```env
-# Example configuration
 DATABASE_URL="postgresql://user:password@localhost:5432/itsa_db?schema=public"
-JWT_SECRET="your-super-secret-jwt-key"
-CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
-# Add your Google/Email SMTP credentials here if needed
+REDIS_URL="redis://localhost:6379"
+JWT_SECRET="super-secret-local-key"
 ```
 
-**For the Frontend (`apps/web/.env`):**
-Create a `.env` file inside `apps/web`:
+**Frontend (`apps/web/.env`):**
 ```env
-VITE_API_URL="http://localhost:3000/api"
+VITE_API_URL="http://localhost:5000/api"
 ```
 
-### 5. Setup the Database
-Navigate to the API folder and push the schema to your PostgreSQL database:
+### 5. Initialize the Database
 ```bash
 cd apps/api
-npx prisma db push
+npm run db:generate
+npm run db:push
+npm run db:seed  # Optional: Creates default roles and test data
 ```
-> **Tip:** The very first user account you create on the platform will automatically be granted the `SUPER_ADMIN` role! 
+> 💡 **Tip:** The very first user account created on a fresh database is automatically granted the `SUPER_ADMIN` role!
 
-### 6. Run the Application
-Start both the frontend and backend simultaneously from the root directory using Turborepo:
+### 6. Start the Magic 🪄
+Run everything simultaneously from the root directory:
 ```bash
 npm run dev
 ```
-- The **Frontend** will typically run on `http://localhost:5173`
-- The **Backend API** will typically run on `http://localhost:3000`
+- 🌐 **Frontend:** `http://localhost:5173`
+- ⚙️ **Backend:** `http://localhost:5000`
 
 ---
 
-## 🛠️ Things You Can Work On (Open Tasks)
+## 🏗️ Architecture Crash Course
 
-Looking for a place to start? We have several exciting features on our roadmap that need implementation. Feel free to pick one up!
+We use a **Monorepo** structure powered by Turborepo to share code seamlessly between the frontend and backend.
 
-  
-- **Payment Gateway Integration**:
-  Integrate a secure payment gateway (like Razorpay or Stripe) to handle paid event registrations directly on the platform instead of relying on external manual verification.
-  
-- **Admin Broadcast Dashboard**:
-  Build the UI in the Admin panel that hooks into our `BROADCAST_MESSAGE` notification template, allowing admins to send custom alerts to specific roles (e.g., all Students or all ITSA Members).
-
-
+```text
+📦 ITSA_Website
+ ┣ 📂 apps/
+ ┃ ┣ 📂 api/       # Express.js REST API (Controllers, Routes, Prisma)
+ ┃ ┗ 📂 web/       # React.js Vite Frontend (Tailwind, React Query)
+ ┣ 📂 packages/
+ ┃ ┗ 📂 shared/    # Shared TypeScript types, Zod schemas, constants!
+ ┗ 📜 turbo.json
+```
+> ⚠️ **Important:** If you update a Zod schema or TypeScript interface in `packages/shared`, you must run `npm run build` inside `packages/shared` so both the API and Web apps can detect the changes!
 
 ---
 
-## 🤝 How to Contribute
+## 🛠️ Open Tasks & Roadmap
 
-If you'd like to fix a bug or add a new feature, follow these steps:
+Looking for a place to start? Here are some highly requested features we need help building:
 
-1. **Fork the Repository**: Click the "Fork" button on GitHub to create your own copy.
-2. **Create a Branch**: `git checkout -b feature/your-amazing-feature`
-3. **Make your Changes**: Write clean, modular code. Don't forget to test!
-4. **Commit your Changes**: `git commit -m "feat: Add amazing new feature"`
-5. **Push to your Fork**: `git push origin feature/your-amazing-feature`
-6. **Open a Pull Request (PR)**: Go back to the original repository on GitHub and click "New Pull Request". Provide a clear description of what you changed.
+- [ ] **📱 Event Attendance Scanner:** Develop a mobile-friendly QR code scanner page within the admin dashboard to quickly scan student tickets at the door and mark them as "Attended".
+- [ ] **📜 Dynamic Bulk Certificates:** Create a dynamic certificate builder where administrators can upload custom templates and map variables (Name, Event, Date) to X/Y coordinates for bulk PDF generation.
+- [ ] **💳 Payment Gateway Integration:** Integrate a secure payment gateway (like Razorpay or Stripe) to handle paid event registrations directly on the platform.
+- [ ] **📢 Admin Broadcast Dashboard:** Build a UI in the Admin panel that hooks into our notification template, allowing admins to send custom alerts to specific roles (e.g., all Students or all ITSA Members).
 
-### Code Review Process
-Once you submit your PR, repository maintainers will review your code. They might suggest some tweaks. Once everything looks good, your PR will be merged into the main branch!
+---
+
+## 🔄 The Pull Request Workflow
+
+1. **Branch out:** Create a branch for your feature or bugfix.
+   ```bash
+   git checkout -b feature/amazing-new-scanner
+   ```
+2. **Code & Test:** Write clean, modular code. Make sure your code passes type-checking:
+   ```bash
+   npm run type-check
+   ```
+3. **Commit:** Write clear, descriptive commit messages.
+   ```bash
+   git commit -m "feat(admin): add QR code scanning UI for events"
+   ```
+4. **Push:** Push to your fork.
+   ```bash
+   git push origin feature/amazing-new-scanner
+   ```
+5. **Open a PR:** Go to the main repository and open a Pull Request. Provide screenshots if you changed the UI!
+
+---
+
+## 💅 Style Guidelines
+
+- **Formatting:** We use Prettier. Ensure your editor is set to format on save.
+- **TypeScript:** Avoid using `any`. Define proper types in `packages/shared` if they don't exist.
+- **Tailwind:** Keep class names organized. For complex conditional classes, use the `cn()` utility function provided in `apps/web/src/lib/utils.ts`.
 
 Thank you for contributing to the ITSA community! 🎉

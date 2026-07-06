@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="./apps/web/public/ITSA_logo.png" alt="ITSA Logo" width="120" />
-  <h1>ITSA Platform</h1>
-  <p>The official web platform for the Information Technology Students' Association (ITSA). An integrated portal for event registrations, announcements, media gallery, and administrative management.</p>
-
+  <img src="./apps/web/public/ITSA_logo.png" alt="ITSA Logo" width="150" />
+  <h1>🌟 ITSA Enterprise Platform</h1>
+  <p><strong>The official, all-in-one web platform for the Information Technology Students' Association (ITSA)</strong></p>
+  
   <p>
     <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" /></a>
     <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
@@ -15,53 +15,90 @@
 
 ---
 
-## ✨ Key Features
+## 📖 Overview
 
-### For Students
-- **Event Discovery & Registration:** Browse upcoming events, workshops, and placement drives. Register as an individual or form a team (with constraints enforced automatically).
-- **Public Gallery:** View high-quality photos from past events without needing an account.
-- **Announcements:** Stay up to date with the latest club news, notices, and updates.
-- **Dashboard:** Track your event registrations, download tickets/QR codes, and manage your profile.
+The **ITSA Platform** is a modern, integrated web portal designed to streamline the operations of the Information Technology Students' Association. From event registrations and public announcements to an interactive media gallery and robust administrative control, this platform bridges the gap between the student community and club administrators.
 
-### For Administrators (Role-Based Access Control)
-The platform uses a strict, hierarchical **Role-Based Access Control (RBAC)** system:
-- **`SUPER_ADMIN`**: Full system access. Can modify system settings, access database backups, manage security, and promote/demote other Admins and Super Admins.
-- **`ADMIN`**: Can create events, manage users, approve/reject registrations, and oversee the entire platform.
-- **`ITSA_MEMBER`**: Marketing and content team. Can create gallery albums, upload media, draft announcements, and view basic event data.
-- **`Normal Users`**: ALl the normal users.
-
-### Technical Highlights
-- **Monorepo Architecture:** Powered by Turborepo for seamless code sharing between the frontend and backend.
-- **Robust Security:** JWT-based authentication, real-time database role verification, and comprehensive audit logging for sensitive actions.
-- **Type Safety:** 100% TypeScript with shared types across the API and Web clients. Zod validation for all incoming API requests.
-- **Dynamic Filtering:** Advanced database queries (Prisma) to ensure coordinators only see data they are permitted to see.
+Built with performance, security, and scalability in mind, it leverages a cutting-edge **Turborepo** monorepo architecture, ensuring seamless synchronization between the frontend and backend.
 
 ---
 
-## 🏗️ Architecture
+## ✨ Core Features
 
-This project is built as a monorepo using **Turborepo** and npm workspaces.
+### 🎓 For Students
+- **🎟️ Event Discovery & Registration:** Browse upcoming events, workshops, and placement drives. Register instantly as an individual or form a team.
+- **📸 Public Media Gallery:** View high-quality photo albums from past events and workshops—no account required!
+- **📢 Live Announcements:** Stay up to date with the latest club news, important notices, and real-time updates.
+- **📊 Personalized Dashboard:** Track your event registrations, download your tickets and QR codes, and easily manage your student profile.
+
+### 🛡️ For Administrators
+- **👥 Role-Based Access Control (RBAC):** Strict security ensuring users only have access to what they need.
+- **📈 Comprehensive Management:** Create new events, oversee user registrations, approve/reject team formations, and broadcast announcements.
+- **🖼️ Content Management:** Create and manage gallery albums, uploading photos to showcase ITSA's impact.
+- **🔐 Audit & Security:** All sensitive actions are logged, with JWT-based authentication protecting the entire platform.
+
+---
+
+## 🔐 Role-Based Access Control (RBAC)
+
+Security and organization are paramount. The platform enforces a strict, hierarchical permission system:
+
+| Role | Access Level | Responsibilities & Capabilities |
+| :--- | :--- | :--- |
+| 👑 **`SUPER_ADMIN`** | **Full System Access** | The ultimate authority. Can modify system settings, access database backups, manage security protocols, and promote/demote other Admins. |
+| 🛠️ **`ADMIN`** | **High-Level Management** | Core club administrators. Can create events, manage all users, approve/reject event registrations, and oversee platform operations. |
+| 📝 **`ITSA_MEMBER`** | **Content & Marketing** | The creative team. Can create gallery albums, upload media, draft announcements, and view basic event data. |
+| 🎓 **`USER`** | **Standard Access** | Normal students and participants. Can browse events, register for activities, view the gallery, and manage their personal dashboard. |
+
+---
+
+## 💻 Tech Stack
+
+We believe in using the best tools for the job. Our stack is modern, type-safe, and incredibly fast.
+
+### Frontend
+- **Framework:** React.js (Vite)
+- **Styling:** Tailwind CSS
+- **State/Data:** React Query, Axios
+
+### Backend
+- **Framework:** Node.js & Express.js
+- **Database:** PostgreSQL (with Prisma ORM)
+- **Caching:** Redis (Rate-limiting & caching)
+- **Security:** JSON Web Tokens (JWT), Zod Validation
+
+### Architecture
+- **Monorepo:** Turborepo
+- **Language:** 100% TypeScript across the entire stack
+- **Shared Code:** Shared types, constants, and Zod schemas between API and Web clients
+
+---
+
+## 🏗️ Project Structure
+
+This project utilizes a **Monorepo** architecture to maximize code reuse and development speed.
 
 ```text
 ITSA_Website/
 ├── apps/
-│   ├── api/        # Express.js REST API backend
-│   └── web/        # React.js (Vite) frontend application
+│   ├── api/          # ⚙️ Express.js REST API backend
+│   └── web/          # 🌐 React.js (Vite) frontend application
 ├── packages/
-│   └── shared/     # Shared TypeScript types, Zod schemas, and constants
-└── package.json    # Root configuration
+│   └── shared/       # 🧩 Shared TypeScript types, Zod schemas, and constants
+├── turbo.json        # 🚀 Turborepo configuration
+└── package.json      # 📦 Root dependencies and workspace setup
 ```
 
 ---
 
 ## 🚀 Getting Started
 
-To get a local copy up and running, follow these steps.
+Want to run the platform locally? Follow these simple steps.
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- [PostgreSQL](https://www.postgresql.org/) (Local installation or a cloud instance like Supabase/Neon)
-- [Redis](https://redis.io/) (For caching and rate-limiting)
+- [Node.js](https://nodejs.org/) (v20 or higher recommended)
+- [PostgreSQL](https://www.postgresql.org/) (Local installation or cloud instance like Supabase)
+- [Redis](https://redis.io/) (Required for backend caching)
 
 ### Installation
 
@@ -71,24 +108,24 @@ To get a local copy up and running, follow these steps.
    cd ITSA_Website
    ```
 
-2. **Install dependencies** (This will install dependencies for all workspaces)
+2. **Install dependencies** (Installs for all workspaces automatically)
    ```bash
    npm install
    ```
 
 3. **Set up Environment Variables**
-   - Copy the `.env.example` file in the `apps/api` directory to `.env` and fill in your database credentials and JWT secrets.
-   - Copy the `.env.example` file in the `apps/web` directory to `.env` and set your API URL.
+   - Copy `apps/api/.env.example` to `apps/api/.env` and fill in your Database URL, Redis URL, and JWT secrets.
+   - Copy `apps/web/.env.example` to `apps/web/.env` and set your API base URL.
 
 4. **Database Setup (Prisma)**
    ```bash
    cd apps/api
-   npx prisma generate
-   npx prisma db push
+   npm run db:generate
+   npm run db:push
    ```
-   *(Optional)* Run the seed script to create the initial Super Admin account:
+   *(Optional)* Seed the database with a default Super Admin:
    ```bash
-   npm run seed
+   npm run db:seed
    ```
 
 5. **Start the Development Server**
@@ -96,32 +133,23 @@ To get a local copy up and running, follow these steps.
    ```bash
    npm run dev
    ```
-   This command uses Turborepo to simultaneously start the backend API (usually `localhost:5000`) and the frontend Vite server (usually `localhost:5173`).
+   *Turborepo will effortlessly spin up both the API (localhost:5000) and Web app (localhost:5173) in parallel.*
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions from ITSA members and the open-source community! Whether you want to fix a bug, improve the UI, or build a new feature, your help is appreciated.
+We absolutely love community contributions! Whether it's fixing a bug, designing a new UI component, or optimizing a database query—your help makes ITSA better.
 
-### How to Contribute
-1. **Fork** the repository and clone it locally.
-2. **Create a branch** for your feature (`git checkout -b feature/AmazingFeature`).
-3. **Commit your changes** (`git commit -m 'Add some AmazingFeature'`).
-4. **Push to the branch** (`git push origin feature/AmazingFeature`).
-5. **Open a Pull Request** against the `main` branch.
-
-### Code Guidelines
-- **Type Checking:** Before submitting a PR, ensure there are no TypeScript errors by running `npm run type-check` in the root directory.
-- **Shared Package:** If you are modifying API request payloads or database models, update the types in `packages/shared` and run `npm run build` inside the shared package so the API and Web apps can pick up the changes.
-- **Backend Security:** If you create a new endpoint, always consider what roles should have access to it. Use the `authenticate`, `requireRole`, and `requirePermission` middlewares found in `apps/api/src/middleware/auth.middleware.ts`.
+Please read our [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on how to submit a Pull Request, code style rules, and development tips.
 
 ---
 
 ## 📜 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is distributed under the MIT License. See `LICENSE` for more information.
 
 <div align="center">
-  <p>Built with ❤️ by Sarvesh Avhad</p>
+  <br/>
+  <p>Built with ❤️ by Sarvesh Avhad </p>
 </div>
