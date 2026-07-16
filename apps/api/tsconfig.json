@@ -18,7 +18,6 @@
       "@/*": ["./src/*"],
       "@itsa/shared": ["../../../packages/shared/src"]
     },
-    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]
