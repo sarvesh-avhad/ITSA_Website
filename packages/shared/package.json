@@ -18,10 +18,9 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "zod": "^3.24.0"
-  },
-  "devDependencies": {
+    "zod": "^3.24.0",
     "tsc-alias": "^1.9.1",
     "typescript": "^5.7.0"
-  }
+  },
+  "devDependencies": {}
 }
