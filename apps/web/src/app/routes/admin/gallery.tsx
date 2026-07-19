@@ -89,9 +89,7 @@ export default function AdminGalleryPage() {
       const formData = new FormData();
       Array.from(files).forEach((file) => formData.append('files', file));
       
-      const uploadRes = await apiClient.post('/upload/batch', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const uploadRes = await apiClient.post('/upload/batch', formData);
       
       const uploadedPhotos = uploadRes.data.data;
       const attachPromises = uploadedPhotos.map((photo: any) => 
