@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "tsc && tsc-alias --resolve-full-paths",
+    "build": "tsc && npx tsc-alias --resolve-full-paths",
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist"
   },
