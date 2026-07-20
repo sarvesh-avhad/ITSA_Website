@@ -13,6 +13,7 @@ FROM deps AS build
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 RUN npx prisma generate --schema=apps/api/prisma/schema.prisma
+RUN npm run build --workspace=@itsa/shared
 RUN npm run build --workspace=@itsa/api
 
 # Production
