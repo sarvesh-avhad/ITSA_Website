@@ -124,8 +124,8 @@ export default function AdminSettingsPage() {
             <div>
               <label className="block text-sm font-medium text-white mb-1.5">About Snippet (Homepage)</label>
               <textarea
-                value={formData['about_content'] || ''}
-                onChange={(e) => handleChange('about_content', e.target.value)}
+                value={formData['about_snippet'] || ''}
+                onChange={(e) => handleChange('about_snippet', e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:border-violet-500 outline-none min-h-[100px]"
               />
             </div>

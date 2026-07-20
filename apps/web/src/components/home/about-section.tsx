@@ -38,8 +38,7 @@ export function AboutSection() {
             <span className="gradient-text">Tech Leaders</span>
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            ITSA is the official student association of the Information Technology Department,
-            dedicated to fostering technical excellence, innovation, and collaboration.
+            {cmsData?.about_snippet || 'ITSA is the official student association of the Information Technology Department, dedicated to fostering technical excellence, innovation, and collaboration.'}
           </p>
         </motion.div>
 

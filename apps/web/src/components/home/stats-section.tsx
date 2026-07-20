@@ -1,14 +1,17 @@
 import { motion } from 'framer-motion';
 import { Users, Calendar, Trophy, Handshake } from 'lucide-react';
-
-const stats = [
-  { id: 1, label: 'Student Members', value: '500+', icon: <Users /> },
-  { id: 2, label: 'Technical Events', value: '50+', icon: <Calendar /> },
-  { id: 3, label: 'Registrations', value: '3000+', icon: <Trophy /> },
-  { id: 4, label: 'Industry Collaborations', value: '15+', icon: <Handshake /> }
-];
+import { useSiteConfig } from '@/hooks/use-site-config';
 
 export function StatsSection() {
+  const { data: config } = useSiteConfig();
+
+  const stats = [
+    { id: 1, label: 'Student Members', value: `${config?.stats_members || '500'}+`, icon: <Users /> },
+    { id: 2, label: 'Technical Events', value: `${config?.stats_events || '50'}+`, icon: <Calendar /> },
+    { id: 3, label: 'Years of Excellence', value: `${config?.stats_years || '5'}+`, icon: <Trophy /> },
+    { id: 4, label: 'Alumni Network', value: `${config?.stats_alumni || '3000'}+`, icon: <Handshake /> }
+  ];
+
   return (
     <section className="relative py-20 px-6 border-y border-white/5 bg-black/20">
       <div className="max-w-7xl mx-auto">
